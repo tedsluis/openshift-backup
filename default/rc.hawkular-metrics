@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  generation: 1
+  labels:
+    metrics-infra: hawkular-metrics
+    name: hawkular-metrics
+  name: hawkular-metrics
+spec:
+  replicas: 1
+  selector:
+    name: hawkular-metrics
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        metrics-infra: hawkular-metrics
+        name: hawkular-metrics
+    spec:
+      containers:
+      - command:
+        - /opt/hawkular/scripts/hawkular-metrics-wrapper.sh
+        - -b
+        - 0.0.0.0
+        - -Dhawkular.metrics.cassandra.nodes=hawkular-cassandra
+        - -Dhawkular.metrics.cassandra.use-ssl
+        - -Dhawkular.metrics.openshift.auth-methods=openshift-oauth,htpasswd
+        - -Dhawkular.metrics.openshift.htpasswd-file=/secrets/hawkular-metrics.htpasswd.file
+        - -Dhawkular.metrics.allowed-cors-access-control-allow-headers=authorization
+        - -Dhawkular.metrics.default-ttl=7
+        - -Dhawkular-alerts.cassandra-nodes=hawkular-cassandra
+        - -Dhawkular-alerts.cassandra-use-ssl
+        - -Dhawkular.alerts.openshift.auth-methods=openshift-oauth,htpasswd
+        - -Dhawkular.alerts.openshift.htpasswd-file=/secrets/hawkular-metrics.htpasswd.file
+        - -Dhawkular.alerts.allowed-cors-access-control-allow-headers=authorization
+        - -Dcom.datastax.driver.FORCE_NIO=true
+        - -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true
+        - -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true
+        - -DKUBERNETES_MASTER_URL=https://kubernetes.default.svc:443
+        - -DUSER_WRITE_ACCESS=false
+        - --hmw.keystore=/secrets/hawkular-metrics.keystore
+        - --hmw.truststore=/secrets/hawkular-metrics.truststore
+        - --hmw.keystore_password_file=/secrets/hawkular-metrics.keystore.password
+        - --hmw.truststore_password_file=/secrets/hawkular-metrics.truststore.password
+        - --hmw.jgroups_keystore=/secrets/hawkular-metrics.jgroups.keystore
+        - --hmw.jgroups_keystore_password_file=/secrets/hawkular-metrics.jgroups.keystore.password
+        - --hmw.jgroups_alias_file=/secrets/hawkular-metrics.jgroups.alias
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: MASTER_URL
+          value: https://kubernetes.default.svc:443
+        - name: OPENSHIFT_KUBE_PING_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: OPENSHIFT_KUBE_PING_LABELS
+          value: metrics-infra=hawkular-metrics,name=hawkular-metrics
+        - name: STARTUP_TIMEOUT
+          value: "500"
+        image: registry.access.redhat.com/openshift3/metrics-hawkular-metrics:v3.4
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /opt/hawkular/scripts/hawkular-metrics-liveness.py
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: hawkular-metrics
+        ports:
+        - containerPort: 8080
+          name: http-endpoint
+          protocol: TCP
+        - containerPort: 8443
+          name: https-endpoint
+          protocol: TCP
+        - containerPort: 8888
+          name: ping
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /opt/hawkular/scripts/hawkular-metrics-readiness.py
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /secrets
+          name: hawkular-metrics-secrets
+        - mountPath: /client-secrets
+          name: hawkular-metrics-client-secrets
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      serviceAccount: hawkular
+      serviceAccountName: hawkular
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: hawkular-metrics-secrets
+        secret:
+          defaultMode: 420
+          secretName: hawkular-metrics-secrets
+      - name: hawkular-metrics-client-secrets
+        secret:
+          defaultMode: 420
+          secretName: hawkular-metrics-account
+status:
+  replicas: 0

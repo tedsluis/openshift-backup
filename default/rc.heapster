@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  generation: 1
+  labels:
+    metrics-infra: heapster
+    name: heapster
+  name: heapster
+spec:
+  replicas: 1
+  selector:
+    name: heapster
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        metrics-infra: heapster
+        name: heapster
+    spec:
+      containers:
+      - command:
+        - heapster-wrapper.sh
+        - --wrapper.username_file=/hawkular-account/hawkular-metrics.username
+        - --wrapper.password_file=/hawkular-account/hawkular-metrics.password
+        - --wrapper.allowed_users_file=/secrets/heapster.allowed-users
+        - --wrapper.endpoint_check=https://hawkular-metrics:443/hawkular/metrics/status
+        - --source=kubernetes:https://kubernetes.default.svc:443?useServiceAccount=true&kubeletHttps=true&kubeletPort=10250
+        - --sink=hawkular:https://hawkular-metrics:443?tenant=_system&labelToTenant=pod_namespace&labelNodeId=nodename&caCert=/hawkular-cert/hawkular-metrics-ca.certificate&user=%username%&pass=%password%&filter=label(container_name:^system.slice.*|^user.slice)
+        - --tls_cert=/secrets/heapster.cert
+        - --tls_key=/secrets/heapster.key
+        - --tls_client_ca=/secrets/heapster.client-ca
+        - --allowed_users=%allowed_users%
+        - --metric_resolution=10s
+        env:
+        - name: STARTUP_TIMEOUT
+          value: "500"
+        image: registry.access.redhat.com/openshift3/metrics-heapster:v3.4
+        imagePullPolicy: IfNotPresent
+        name: heapster
+        ports:
+        - containerPort: 8082
+          name: http-endpoint
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /opt/heapster-readiness.sh
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /secrets
+          name: heapster-secrets
+        - mountPath: /hawkular-cert
+          name: hawkular-metrics-certificate
+        - mountPath: /hawkular-account
+          name: hawkular-metrics-account
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      serviceAccount: heapster
+      serviceAccountName: heapster
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: heapster-secrets
+        secret:
+          defaultMode: 420
+          secretName: heapster-secrets
+      - name: hawkular-metrics-certificate
+        secret:
+          defaultMode: 420
+          secretName: hawkular-metrics-certificate
+      - name: hawkular-metrics-account
+        secret:
+          defaultMode: 420
+          secretName: hawkular-metrics-account
+status:
+  replicas: 0
