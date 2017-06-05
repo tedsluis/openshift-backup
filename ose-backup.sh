@@ -1,39 +1,48 @@
 #!/bin/bash
 
-for PROJECT in `oc get project --no-headers | awk '{print $1}' `
-     do
-     if [ ! -d "$PROJECT" ] ; then
-          mkdir $PROJECT
+function MAKE_DIRECTORY {
+     DIRECTORY=$1
+     if [ ! -d "$DIRECTORY" ] ; then
+          mkdir "$DIRECTORY"
      fi
-     for OBJECT in $(cat /etc/bash_completion.d/oc | grep 'must_have_one_noun+=' | sort -u | sed 's/must_have_one_noun+=("//' | sed 's/")//' | sed 's/\s*//')
+}
+
+for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | sort) "GLOBAL")
+do
+     MAKE_DIRECTORY "$PROJECT"
+     for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | grep -P 'must_have_one_noun\+=\(\"' | sed 's/\s*must_have_one_noun+=("//' | sed 's/")//' | sort -u | grep -v event)
      do
-          for OBJECTNAME in `oc get $OBJECT -n $PROJECT  --no-headers 2>/dev/null| awk '{print $1}' ` 
+          for OBJECTTYPENAME in `oc get $OBJECTTYPE -n $PROJECT  -o name --no-headers 2>/dev/null| awk '{print $1}' | sort` 
           do
+              OBJECTNAME=$(echo $OBJECTTYPENAME | sed "s/^$OBJECTTYPE\///")
               CHECKNAMESPACE=""
-              if grep  -q "^$OBJECT$" globalobjects ; then 
+              if grep  -q "^$OBJECTTYPE$" globalobjects ; then 
                    CHECKNAMESPACE=""
-              elif grep -q "^$OBJECT$" namespaceobjects ; then
+              elif grep -q "^$OBJECTTYPE$" namespaceobjects ; then
                    CHECKNAMESPACE=$PROJECT
-              #     echo "debug: OBJECT=$OBJECT, PROJECT=$PROJECT, CHECKNAMESPACE=$CHECKNAMESPACE"
               else
-                   CHECKNAMESPACE=$(oc export -n $PROJECT $OBJECT $OBJECTNAME --raw | grep -P '^\s*namespace:' | awk '{print $2}' | grep  "$PROJECT")
-               #  echo "debug --> NAMESPACE=$PROJECT: $OBJECT $OBJECTNAME                  ---> $CHECKNAMESPACE"
+                   CHECKNAMESPACE=$(oc describe -n $PROJECT $OBJECTTYPE $OBJECTNAME  2>/dev/null | grep -P '^Namespace:' | awk '{print $2}' | grep  "^$PROJECT$")
                    if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
-                        echo $OBJECT >> globalobjects
+                        echo $OBJECTTYPE >> globalobjects
                    else
-                        echo $OBJECT >> namespaceobjects
+                        echo $OBJECTTYPE >> namespaceobjects
                    fi
               fi
               if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
-                   if grep -q "^$OBJECT$" globalobjects ; then
-                        COUNTGLOBALOBJECTS=$COUNTGLOBALOBJECTS+1
-                   else
-               #         echo "GLOBAL: $OBJECT $OBJECTNAME      ($COUNTGLOBALOBJECTS)"
-                         printf "%-30s  %-30s  %-50s\n" "GLOBAL" "$OBJECT" "$OBJECTNAME" 
+                   if grep -q "^$OBJECTTYPE$" globalobjects ; then
+                        if [ "$PROJECT" == "GLOBAL" ] ; then
+                             MAKE_DIRECTORY "GLOBAL/$OBJECTTYPE"
+                             printf "%-30s  %-30s  %-50s\n" "$PROJECT/GLOBAL" "$OBJECTTYPE" "$OBJECTNAME"
+                             oc export --raw $OBJECTTYPE $OBJECTNAME > "GLOBAL/$OBJECTTYPE/$OBJECTNAME"
+                        fi
                    fi
               else
-                # echo "NAMESPACE=$PROJECT: $OBJECT $OBJECTNAME                  ---> $CHECKNAMESPACE"
-                  printf "%-30s  %-30s  %-50s\n" "$PROJECT" "$OBJECT" "$OBJECTNAME" 
+                  MAKE_DIRECTORY "$PROJECT/$OBJECTTYPE"
+                  printf "%-30s  %-30s  %-50s\n" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" 
+                  #if [ $OBJECTTYPE == "pod" ]; then
+                  #     OBJECTNAME=$(echo $OBJECTNAME | sed 's/\(pizza-session\)-[0-9]\+-build/\1-build/' | sed 's/\(pizza-session\)-\([0-9]\+\)-[a-z][a-z][a-z][a-z][a-z]$/\1-\2/')
+                  #fi
+                  oc export --raw -n $PROJECT $OBJECTTYPE $OBJECTNAME > "$PROJECT/$OBJECTTYPE/$OBJECTNAME"
               fi 
           done
      done
