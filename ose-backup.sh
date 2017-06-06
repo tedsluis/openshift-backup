@@ -3,11 +3,20 @@
 # Default settings
 NAME_BACKUP_GIT_REPO="$HOME/openshift-backup-files"
 DEBUG_MODE="false"
-NAMESPACES=$(echo $(oc get projects -o name | sed 's/^project\///') | sed 's/\s/,/g') # all your namespaces
 REMOVE_SECRETS="false"
+NAMESPACES=$(echo $(oc get projects -o name | sed 's/^project\///' | \
+                                              sort -u) | \
+                                              sed 's/\s/,/g')    # all your namespaces
+OBJECTTYPES=$(echo $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | \
+                     grep -P 'must_have_one_noun\+=\(\"' | \
+                     sed 's/\s*must_have_one_noun+=("//' | \
+                     sed 's/")//' | \
+                     sort -u | \
+                     grep -v event) | \
+                     sed 's/\s/,/g')
 
 # Initialize variables
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 function debug {
      TEXT=$1
@@ -21,22 +30,26 @@ function help {
      echo "OpenShift objects backup tool"
      echo ""
      echo "Usage:"
-     echo "   ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...  Specify namespaces to backed up."
-     echo "   ${SCRIPTNAME} --backup-directory=<path>                 Backup directory path."
-     echo "   ${SCRIPTNAME} --remove-secrets=true|false               Remove secrets from backup."
-     echo "   ${SCRIPTNAME} --help                                    This help text."
-     echo "   ${SCRIPTNAME} --debug                                   Displays debug logging."
-     echo "   ${SCRIPTNAME} --version                                 Display version info."
+     echo "  ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...     Specify namespaces to backed up."
+     echo "  ${SCRIPTNAME} --object-type=<objecttype>,[<objecttype>]... Specify object types to backed up."
+     echo "  ${SCRIPTNAME} --backup-directory=<path>                    Backup directory path."
+     echo "  ${SCRIPTNAME} --remove-secrets=true|false                  Remove secrets from backup."
+     echo "  ${SCRIPTNAME} --help                                       This help text."
+     echo "  ${SCRIPTNAME} --debug                                      Displays debug logging."
+     echo "  ${SCRIPTNAME} --version                                    Display version info."
      echo ""
      echo "Defaults:"
      echo "  --namespace=$NAMESPACES"
      echo "  --backup-directory=$NAME_BACKUP_GIT_REPO"
      echo "  --remove-secrets=$REMOVE_SECRETS"
+     echo "  --objecttype=$OBJECTTYPES"
      exit 0
 }
 
 function version {
-     echo "\n${SCRIPTNAME}, version 0.1, Juni 2017\n"
+     echo ""
+     echo "${SCRIPTNAME}, version 0.1, Juni 2017"
+     echo ""
      exit 0
 }
 
@@ -44,7 +57,7 @@ function version {
 for PARAMETER in "$@" ; do
      #
      # Options
-     debug $PARAMETER
+     debug "$PARAMETER"
      if [[ $PARAMETER == "--help" ]] || [[ $PARAMETER == "-help" ]] || [[ $PARAMETER == "-h" ]]; then
           help
      elif [[ $PARAMETER == "--version" ]] || [[ $PARAMETER == "-version" ]] || [[ $PARAMETER == "-v" ]]; then
@@ -52,12 +65,14 @@ for PARAMETER in "$@" ; do
      elif [[ $PARAMETER == "--debug" ]] ; then
           echo "Debug mode on!"
           DEBUG_MODE="true"
-     elif [[ $PARAMETER =~ ^--namespaces?=[a-zA-Z,_\-/]{1,}$ ]]; then
-          NAMESPACES=$(echo $PARAMETER | sed -r "s/^--namespaces?=//g")
+     elif [[ $PARAMETER =~ ^--namespaces?=[0-9a-zA-Z,_\-]{1,}$ ]]; then
+          NAMESPACES=$(echo "$PARAMETER" | sed -r "s/^--namespaces?=//g")
+     elif [[ $PARAMETER =~ ^--object-types?=[a-zA-Z,]{1,}$ ]]; then
+          OBJECTTYPES=$(echo "$PARAMETER" | sed -r "s/^--object-types?=//g")
      elif [[ $PARAMETER =~ ^--remove-secrets?=(true|false)$ ]]; then
-          REMOVE_SECRETS=$(echo $PARAMETER | sed -r "s/^--remove-secrets?=//g")
+          REMOVE_SECRETS=$(echo "$PARAMETER" | sed -r "s/^--remove-secrets?=//g")
      elif [[ $PARAMETER =~ ^--backup-directory=[a-zA-Z0-9_\-\/\.]+$ ]]; then
-          NAME_BACKUP_GIT_REPO=$(echo $PARAMETER | sed -r "s/^--backup-directory=//g")
+          NAME_BACKUP_GIT_REPO=$(echo "$PARAMETER" | sed -r "s/^--backup-directory=//g")
      else
           echo "Parameter '$PARAMETER' is invalid!"
           exit 1
@@ -68,6 +83,8 @@ debug "NAMESPACE='$NAMESPACES'"
 debug "REMOVE_SECRETS='$REMOVE_SECRETS'"
 debug "NAME_BACKUP_GIT_REPO='$NAME_BACKUP_GIT_REPO'"
 debug "DEBUG='$DEBUG_MODE'"
+debug "OBJECTTYPES='$OBJECTTYPES'"
+debug " "
 
 # counters
 OBJECTCOUNT=0
@@ -91,14 +108,14 @@ function COMMIT_CHANGES {
      OBJECTNAME=$3
      OBJECTCOUNT=$(($OBJECTCOUNT + 1))
      git --work-tree="$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
-     STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep $OBJECTNAME | awk '{print $2}')
+     STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep "$OBJECTNAME" | awk '{print $2}')
      if [ "$STATUS" == "new" ]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
-           printf "     new object: %-8s, %-30s  %-30s  %-50s" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "      new object: %-8s, %-30s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
      elif [ "$STATUS" == "modified" ]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
-           printf "modified object: %-8s, %-30s  %-30s  %-50s" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf " modified object: %-8s, %-30s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>dev/null
      else
           printf "unchanged object: %-8s  %-30s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
@@ -115,35 +132,51 @@ fi
 # House keeping 
 GLOBALOBJECTSFILE="$NAME_BACKUP_GIT_REPO/globalobjects"
 NAMESPACEOBJECTSFILE="$NAME_BACKUP_GIT_REPO/namespaceobjects"
-rm $GLOBALOBJECTSFILE 2>/dev/null
-rm $NAMESPACEOBJECTSFILE 2>/dev/null
-touch $GLOBALOBJECTSFILE
-touch $NAMESPACEOBJECTSFILE
+rm "$GLOBALOBJECTSFILE" 2>/dev/null
+rm "$NAMESPACEOBJECTSFILE" 2>/dev/null
+touch "$GLOBALOBJECTSFILE"
+touch "$NAMESPACEOBJECTSFILE"
 
-for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | sort) "GLOBAL")
+# convert commas into pipes
+NAMESPACES=$(echo "$NAMESPACES" | sed 's/,/$|^/g')
+OBJECTTYPES=$(echo "$OBJECTTYPES" | sed 's/,/$|^/g')
+
+for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
+                                                      grep -P "(^$NAMESPACES$)" | \
+                                                      sort) "GLOBAL")
 do
      PROJECTCOUNT=$(($PROJECTCOUNT + 1))
      MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/$PROJECT"
-     for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | grep -P 'must_have_one_noun\+=\(\"' | sed 's/\s*must_have_one_noun+=("//' | sed 's/")//' | sort -u | grep -v event)
+     for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | \
+                         grep -P 'must_have_one_noun\+=\(\"' | \
+                         sed 's/\s*must_have_one_noun+=("//' | \
+                         sed 's/")//' | \
+                         sort -u | \
+                         grep -v event | \
+                         grep -P "(^$OBJECTTYPES$)" )
      do
-          for OBJECTTYPENAME in `oc get $OBJECTTYPE -n $PROJECT  -o name --no-headers 2>/dev/null| awk '{print $1}' | sort` 
+          for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' | sort` 
           do
-              OBJECTNAME=$(echo $OBJECTTYPENAME | sed "s/^$OBJECTTYPE\///")
+              OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///")
+              # Check if this object type is GLOBAL or belongs to a namespace
               CHECKNAMESPACE=""
-              if grep  -q "^$OBJECTTYPE$" $GLOBALOBJECTSFILE ; then 
+              if grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
                    CHECKNAMESPACE=""
-              elif grep -q "^$OBJECTTYPE$" $NAMESPACEOBJECTSFILE ; then
+              elif grep -q "^$OBJECTTYPE$" "$NAMESPACEOBJECTSFILE" ; then
                    CHECKNAMESPACE=$PROJECT
               else
-                   CHECKNAMESPACE=$(oc describe -n $PROJECT $OBJECTTYPE $OBJECTNAME  2>/dev/null | grep -P '^Namespace:' | awk '{print $2}' | grep  "^$PROJECT$")
+                   CHECKNAMESPACE=$(oc describe -n "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"  2>/dev/null | grep -P '^Namespace:' | \
+                                                                                                         awk '{print $2}' | \
+                                                                                                         grep  "^$PROJECT$")
                    if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
-                        echo $OBJECTTYPE >> $GLOBALOBJECTSFILE
+                        echo "$OBJECTTYPE" >> "$GLOBALOBJECTSFILE"
                    else
-                        echo $OBJECTTYPE >> $NAMESPACEOBJECTSFILE
+                        echo "$OBJECTTYPE" >> "$NAMESPACEOBJECTSFILE"
                    fi
               fi
               if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
-                   if grep -q "^$OBJECTTYPE$" $GLOBALOBJECTSFILE ; then
+                   # Must be a GLOBAL object type (none namespace)
+                   if grep -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then
                         if [ "$PROJECT" == "GLOBAL" ] ; then
                              MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/GLOBAL/$OBJECTTYPE"
                              oc export --raw $OBJECTTYPE $OBJECTNAME > "$NAME_BACKUP_GIT_REPO/GLOBAL/$OBJECTTYPE/$OBJECTNAME"
@@ -151,10 +184,11 @@ do
                         fi
                    fi
               else
+                  # Object type belongs to a namespace
                   MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE"
-                  if [[ $OBJECTTYPE == "secret" ]]; then
+                  if [[ "$OBJECTTYPE" == "secret" ]]; then
                        # Remove secrets
-                       oc export --raw -n $PROJECT $OBJECTTYPE $OBJECTNAME \
+                       oc export --raw -n "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" \
                           | sed 's/\(token\|openshift.io\/token-secret.value\):.*$/\1: ===Token has been removed due to security risks===/' \
                           | sed 's/.\(ce\?rt\|ca\|certificate\):.*$/.\1: ===Certificate has been removed due to security risks===/' \
                           | sed 's/value:.*$/value: ===Value has been removed due to security risks===/' \
@@ -166,15 +200,15 @@ do
                           | sed 's/alias:.*$/alias: ===Alias has been removed due to security risks===/' \
                           > "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME"
                   else
-                       oc export --raw -n $PROJECT $OBJECTTYPE $OBJECTNAME > "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME"
+                       oc export --raw -n "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" > "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME"
                   fi
-                  COMMIT_CHANGES "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" 
-              fi 
+                  COMMIT_CHANGES "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+              fi
           done
      done
 done
 
 debug "Number of projects:         $PROJECTCOUNT"
 debug "Number of objects:          $OBJECTCOUNT"
-debug "Number of new objects:      $NEWOBJECTCOUNTS"
-debug "Number of modified objects: $MODIFIEDOBJECTS"
+debug "Number of new objects:      $NEWOBJECTCOUNT"
+debug "Number of modified objects: $MODIFIEDOBJECTCOUNT"
