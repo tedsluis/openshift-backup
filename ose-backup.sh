@@ -12,17 +12,33 @@ IGNORE_OBJECTTYPES="event"
 BACKUP_GLOBALOBJECTS="false"
 # (Part of) objectname:
 OBJECTNAME=""
+
+# Check login OpenShift
+LOGIN=$(oc whoami)
+if [[ $? > 0 ]]; then
+     exit 1
+fi
+
+# Path to oc completion file for object types
+CURRENT_DIRECTORY=$(pwd)
+OC_COMPLETION_FILE="/etc/bash_completion.d/oc"
+if [ ! -f "$OC_COMPLETION_FILE" ]; then
+     echo "No '$OC_COMPLETION_FILE' file found. Now using '$CURRENT_DIRECTORY/oc' to get object types."
+     OC_COMPLETION_FILE="CURRENT_DIRECTORY/oc"
+fi
+
 # Get all your namespaces:
 NAMESPACES=$(echo $(oc get projects -o name | sed 's/^project\///' | \
                                               sort -u) | \
                                               sed 's/\s/,/g')
 # Get all object types:
-OBJECTTYPES=$(echo $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | \
+OBJECTTYPES=$(echo $(sed -n -e '/^_oc_get/,/^}/ p' "$OC_COMPLETION_FILE" | \
                      grep -P 'must_have_one_noun\+=\(\"' | \
                      sed 's/\s*must_have_one_noun+=("//' | \
                      sed 's/")//' | \
                      sort -u) | \
                      sed 's/\s/,/g')
+
 # Initialize variables
 SCRIPTNAME=$(basename "$0")
 
@@ -39,12 +55,12 @@ function help {
      echo ""
      echo "Usage:"
      echo "  ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...            Specify namespaces to backed up."
-     echo "  ${SCRIPTNAME} --backup-global-objects=true|false                  Backup global objects."
+     echo "  ${SCRIPTNAME} --backup-global-objects=[true]|[false]              Backup global objects."
      echo "  ${SCRIPTNAME} --object-type=<objecttype>,[<objecttype>]...        Specify object types to be backed up."
      echo "  ${SCRIPTNAME} --ignore-object-type=<objecttype>,[<objecttype>]... Specify object types to be ignored."
      echo "  ${SCRIPTNAME} --objectname=<[part of ]objectname>                 Part of object name."
      echo "  ${SCRIPTNAME} --backup-directory=<path>                           Backup directory path."
-     echo "  ${SCRIPTNAME} --remove-secrets=true|false                         Remove secrets from backup."
+     echo "  ${SCRIPTNAME} --remove-secrets=[true]|[false]                     Remove secrets from backup."
      echo "  ${SCRIPTNAME} --help                                              This help text."
      echo "  ${SCRIPTNAME} --debug                                             Displays debug logging."
      echo "  ${SCRIPTNAME} --version                                           Display version info."
@@ -61,6 +77,7 @@ function help {
      echo "  --objectname=$OBJECTNAME"
      echo "  --ignore-object-type=$IGNORE_OBJECTTYPES"
      echo "  --object-type=$OBJECTTYPES"
+     echo ""
      exit 0
 }
 
@@ -173,11 +190,13 @@ touch "$NAMESPACEOBJECTSFILE"
 NAMESPACES=$(echo  "$NAMESPACES"  | sed 's/,/$|^/g')
 OBJECTTYPES=$(echo "$OBJECTTYPES" | sed 's/,/$|^/g')
 IGNORE_OBJECTTYPES=$(echo "$IGNORE_OBJECTTYPES" | sed 's/,/$|^/g')
+OBJECTNAME=$(echo "$OBJECTNAME" | sed 's/^\s*$/.*/')
 BACKUP_GLOBALOBJECTS=$(echo "$BACKUP_GLOBALOBJECTS" | sed 's/true/GLOBAL/' | sed 's/false//')
 
 debug "namespace regular expression:   ^$NAMESPACES$"
 debug "object type regular expression: ^$OBJECTTYPES$"
 debug "ignore object type regular expression: ^$IGNORE_OBJECTTYPES$"
+debug "object name regular expression: $OBJECTNAME"
 debug "backup global objects: $BACKUP_GLOBALOBJECTS"
 
 for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
@@ -186,7 +205,7 @@ for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
 do
      PROJECTCOUNT=$(($PROJECTCOUNT + 1))
      MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/$PROJECT"
-     for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | \
+     for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' "$OC_COMPLETION_FILE" | \
                          grep -P 'must_have_one_noun\+=\(\"' | \
                          sed 's/\s*must_have_one_noun+=("//' | \
                          sed 's/")//' | \
@@ -195,7 +214,7 @@ do
                          grep -P "(^$OBJECTTYPES$)" )
      do
           for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' \
-                                                                                                     | grep "$OBJECTNAME" \
+                                                                                                     | grep -P "$OBJECTNAME" \
                                                                                                      | sort` 
           do
               OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///")
