@@ -201,8 +201,11 @@ do
               OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///")
               # Check if this object type is GLOBAL or belongs to a namespace
               CHECKNAMESPACE=""
+              # Namespace or project:
+              if [[ "$OBJECTTYPE" == "namespace" ]] || [[ "$OBJECTTYPE" == "project" ]]; then
+                   CHECKNAMESPACE=$PROJECT
               # try to match object type with GLOBAL object type cache file
-              if grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
+              elif grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
                    CHECKNAMESPACE=""
               # try to match object type with NAMESPACE object type cache file
               elif grep -q "^$OBJECTTYPE$" "$NAMESPACEOBJECTSFILE" ; then
