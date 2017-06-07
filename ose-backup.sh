@@ -1,20 +1,28 @@
 #!/bin/bash
 
-# Default settings
+# Default backup direcory:
 NAME_BACKUP_GIT_REPO="$HOME/openshift-backup-files"
+# Debug mode:
 DEBUG_MODE="false"
+# Remove tokens, certificates, passwords, keys, etc from secrets:
 REMOVE_SECRETS="false"
+# Specify object types that should be ignored (seperated by commas):
+IGNORE_OBJECTTYPES="event"
+# Backup global objects
+BACKUP_GLOBALOBJECTS="false"
+# (Part of) objectname:
+OBJECTNAME=""
+# Get all your namespaces:
 NAMESPACES=$(echo $(oc get projects -o name | sed 's/^project\///' | \
                                               sort -u) | \
-                                              sed 's/\s/,/g')    # all your namespaces
+                                              sed 's/\s/,/g')
+# Get all object types:
 OBJECTTYPES=$(echo $(sed -n -e '/^_oc_get/,/^}/ p' /etc/bash_completion.d/oc | \
                      grep -P 'must_have_one_noun\+=\(\"' | \
                      sed 's/\s*must_have_one_noun+=("//' | \
                      sed 's/")//' | \
-                     sort -u | \
-                     grep -v event) | \
+                     sort -u) | \
                      sed 's/\s/,/g')
-
 # Initialize variables
 SCRIPTNAME=$(basename "$0")
 
@@ -30,19 +38,29 @@ function help {
      echo "OpenShift objects backup tool"
      echo ""
      echo "Usage:"
-     echo "  ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...     Specify namespaces to backed up."
-     echo "  ${SCRIPTNAME} --object-type=<objecttype>,[<objecttype>]... Specify object types to backed up."
-     echo "  ${SCRIPTNAME} --backup-directory=<path>                    Backup directory path."
-     echo "  ${SCRIPTNAME} --remove-secrets=true|false                  Remove secrets from backup."
-     echo "  ${SCRIPTNAME} --help                                       This help text."
-     echo "  ${SCRIPTNAME} --debug                                      Displays debug logging."
-     echo "  ${SCRIPTNAME} --version                                    Display version info."
+     echo "  ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...            Specify namespaces to backed up."
+     echo "  ${SCRIPTNAME} --backup-global-objects=true|false                  Backup global objects."
+     echo "  ${SCRIPTNAME} --object-type=<objecttype>,[<objecttype>]...        Specify object types to be backed up."
+     echo "  ${SCRIPTNAME} --ignore-object-type=<objecttype>,[<objecttype>]... Specify object types to be ignored."
+     echo "  ${SCRIPTNAME} --objectname=<[part of ]objectname>                 Part of object name."
+     echo "  ${SCRIPTNAME} --backup-directory=<path>                           Backup directory path."
+     echo "  ${SCRIPTNAME} --remove-secrets=true|false                         Remove secrets from backup."
+     echo "  ${SCRIPTNAME} --help                                              This help text."
+     echo "  ${SCRIPTNAME} --debug                                             Displays debug logging."
+     echo "  ${SCRIPTNAME} --version                                           Display version info."
+     echo ""
+     echo "Examples:"
+     echo "  ${SCRIPTNAME} --namespace=myapp --objectname=app2 --remove-secrets=true"
+     echo "  ${SCRIPTNAME} --backup-global-objects=true --ignore-object-type=events,pods --remove-secrets=true"
      echo ""
      echo "Defaults:"
      echo "  --namespace=$NAMESPACES"
+     echo "  --backup-global-objects=$BACKUP_GLOBALOBJECTS"
      echo "  --backup-directory=$NAME_BACKUP_GIT_REPO"
      echo "  --remove-secrets=$REMOVE_SECRETS"
-     echo "  --objecttype=$OBJECTTYPES"
+     echo "  --objectname=$OBJECTNAME"
+     echo "  --ignore-object-type=$IGNORE_OBJECTTYPES"
+     echo "  --object-type=$OBJECTTYPES"
      exit 0
 }
 
@@ -56,23 +74,35 @@ function version {
 # Parse input parameters
 for PARAMETER in "$@" ; do
      #
-     # Options
-     debug "$PARAMETER"
+     # options
      if [[ $PARAMETER == "--help" ]] || [[ $PARAMETER == "-help" ]] || [[ $PARAMETER == "-h" ]]; then
           help
      elif [[ $PARAMETER == "--version" ]] || [[ $PARAMETER == "-version" ]] || [[ $PARAMETER == "-v" ]]; then
           version 
      elif [[ $PARAMETER == "--debug" ]] ; then
-          echo "Debug mode on!"
+          debug "Debug mode is on!"
           DEBUG_MODE="true"
-     elif [[ $PARAMETER =~ ^--namespaces?=[0-9a-zA-Z,_\-]{1,}$ ]]; then
+     elif [[ $PARAMETER =~ ^--namespaces?=[0-9a-zA-Z,\._\-]{1,}$ ]]; then
           NAMESPACES=$(echo "$PARAMETER" | sed -r "s/^--namespaces?=//g")
+          debug "--namespace=$NAMESPACES"
+     elif [[ $PARAMETER =~ ^--backup-global-objects?=(true|false)$ ]]; then
+          BACKUP_GLOBALOBJECTS=$(echo "$PARAMETER" | sed -r "s/^--backup-global-objects?=//g")
+          debug "--backup-global-object=$BACKUP_GLOBALOBJECTS"
      elif [[ $PARAMETER =~ ^--object-types?=[a-zA-Z,]{1,}$ ]]; then
           OBJECTTYPES=$(echo "$PARAMETER" | sed -r "s/^--object-types?=//g")
+          debug "--object-type=$OBJECTTYPES"
+     elif [[ $PARAMETER =~ ^--ignore-object-types?=[a-zA-Z,]{1,}$ ]]; then
+          IGNORE_OBJECTTYPES=$(echo "$PARAMETER" | sed -r "s/^--ignore-object-types?=//g")
+          debug "--ignore-object-type=$IGNORE_OBJECTTYPES"
+     elif [[ $PARAMETER =~ ^--objectname?=[0-9a-zA-Z,\._\-]{1,}$ ]]; then
+          OBJECTNAME=$(echo "$PARAMETER" | sed -r "s/^--objectname?=//g")
+          debug "--objectname=$OBJECTNAME"
      elif [[ $PARAMETER =~ ^--remove-secrets?=(true|false)$ ]]; then
           REMOVE_SECRETS=$(echo "$PARAMETER" | sed -r "s/^--remove-secrets?=//g")
+          debug "--remove-secret=$REMOVE_SECRETS"
      elif [[ $PARAMETER =~ ^--backup-directory=[a-zA-Z0-9_\-\/\.]+$ ]]; then
           NAME_BACKUP_GIT_REPO=$(echo "$PARAMETER" | sed -r "s/^--backup-directory=//g")
+          debug "--backup-directory=$NAME_BACKUP_GIT_REPO"
      else
           echo "Parameter '$PARAMETER' is invalid!"
           exit 1
@@ -80,11 +110,13 @@ for PARAMETER in "$@" ; do
 done
 
 debug "NAMESPACE='$NAMESPACES'"
+debug "BACKUP_GLOBALOBJECTS='$BACKUP_GLOBALOBJECTS'"
 debug "REMOVE_SECRETS='$REMOVE_SECRETS'"
 debug "NAME_BACKUP_GIT_REPO='$NAME_BACKUP_GIT_REPO'"
 debug "DEBUG='$DEBUG_MODE'"
+debug "OBJECTNAME='$OBJECTNAME'"
+debug "IGNORE_OBJECTTYPES='$IGNORE_OBJECTTYPES'"
 debug "OBJECTTYPES='$OBJECTTYPES'"
-debug " "
 
 # counters
 OBJECTCOUNT=0
@@ -137,13 +169,20 @@ rm "$NAMESPACEOBJECTSFILE" 2>/dev/null
 touch "$GLOBALOBJECTSFILE"
 touch "$NAMESPACEOBJECTSFILE"
 
-# convert commas into pipes
-NAMESPACES=$(echo "$NAMESPACES" | sed 's/,/$|^/g')
+# turn variables into regular expressions: convert commas into pipes
+NAMESPACES=$(echo  "$NAMESPACES"  | sed 's/,/$|^/g')
 OBJECTTYPES=$(echo "$OBJECTTYPES" | sed 's/,/$|^/g')
+IGNORE_OBJECTTYPES=$(echo "$IGNORE_OBJECTTYPES" | sed 's/,/$|^/g')
+BACKUP_GLOBALOBJECTS=$(echo "$BACKUP_GLOBALOBJECTS" | sed 's/true/GLOBAL/' | sed 's/false//')
+
+debug "namespace regular expression:   ^$NAMESPACES$"
+debug "object type regular expression: ^$OBJECTTYPES$"
+debug "ignore object type regular expression: ^$IGNORE_OBJECTTYPES$"
+debug "backup global objects: $BACKUP_GLOBALOBJECTS"
 
 for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
                                                       grep -P "(^$NAMESPACES$)" | \
-                                                      sort) "GLOBAL")
+                                                      sort) "$BACKUP_GLOBALOBJECTS")
 do
      PROJECTCOUNT=$(($PROJECTCOUNT + 1))
      MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/$PROJECT"
@@ -152,25 +191,33 @@ do
                          sed 's/\s*must_have_one_noun+=("//' | \
                          sed 's/")//' | \
                          sort -u | \
-                         grep -v event | \
+                         grep -vP "(^$IGNORE_OBJECTTYPES$)" | \
                          grep -P "(^$OBJECTTYPES$)" )
      do
-          for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' | sort` 
+          for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' \
+                                                                                                     | grep "$OBJECTNAME" \
+                                                                                                     | sort` 
           do
               OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///")
               # Check if this object type is GLOBAL or belongs to a namespace
               CHECKNAMESPACE=""
+              # try to match object type with GLOBAL object type cache file
               if grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
                    CHECKNAMESPACE=""
+              # try to match object type with NAMESPACE object type cache file
               elif grep -q "^$OBJECTTYPE$" "$NAMESPACEOBJECTSFILE" ; then
                    CHECKNAMESPACE=$PROJECT
+              # Find out whether this object type has a namespace
               else
                    CHECKNAMESPACE=$(oc describe -n "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"  2>/dev/null | grep -P '^Namespace:' | \
                                                                                                          awk '{print $2}' | \
                                                                                                          grep  "^$PROJECT$")
+                   # Store object types as cache
                    if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
+                        # GLOBAL object type
                         echo "$OBJECTTYPE" >> "$GLOBALOBJECTSFILE"
                    else
+                        # NAMESPACE object type
                         echo "$OBJECTTYPE" >> "$NAMESPACEOBJECTSFILE"
                    fi
               fi
@@ -190,7 +237,7 @@ do
                        # Remove secrets
                        oc export --raw -n "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" \
                           | sed 's/\(token\|openshift.io\/token-secret.value\):.*$/\1: ===Token has been removed due to security risks===/' \
-                          | sed 's/.\(ce\?rt\|ca\|certificate\):.*$/.\1: ===Certificate has been removed due to security risks===/' \
+                          | sed 's/\(ce\?rt\|ca\|certificate\):.*$/.\1: ===Certificate has been removed due to security risks===/' \
                           | sed 's/value:.*$/value: ===Value has been removed due to security risks===/' \
                           | sed 's/key:.*$/key: ===Key has been removed due to security risks===/' \
                           | sed 's/store:.*$/store: ===Store has been removed due to security risks===/' \
@@ -208,7 +255,7 @@ do
      done
 done
 
-debug "Number of projects:         $PROJECTCOUNT"
-debug "Number of objects:          $OBJECTCOUNT"
+debug "Number of projects matched: $PROJECTCOUNT"
+debug "Number of objects matched:  $OBJECTCOUNT"
 debug "Number of new objects:      $NEWOBJECTCOUNT"
 debug "Number of modified objects: $MODIFIEDOBJECTCOUNT"
