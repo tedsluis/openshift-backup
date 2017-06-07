@@ -11,7 +11,7 @@ IGNORE_OBJECTTYPES="event"
 # Backup global objects
 BACKUP_GLOBALOBJECTS="false"
 # (Part of) objectname:
-OBJECTNAME=""
+OBJECTNAMEPART=""
 
 # Check login OpenShift
 LOGIN=$(oc whoami)
@@ -55,10 +55,10 @@ function help {
      echo ""
      echo "Usage:"
      echo "  ${SCRIPTNAME} --namespace=<namespace>,[<namespace>]...            Specify namespaces to backed up."
-     echo "  ${SCRIPTNAME} --backup-global-objects=[true]|[false]              Backup global objects."
+     echo "  ${SCRIPTNAME} --backup-global-objects=[true]|[false]              Backup global objects (no namespace)."
      echo "  ${SCRIPTNAME} --object-type=<objecttype>,[<objecttype>]...        Specify object types to be backed up."
      echo "  ${SCRIPTNAME} --ignore-object-type=<objecttype>,[<objecttype>]... Specify object types to be ignored."
-     echo "  ${SCRIPTNAME} --objectname=<[part of ]objectname>                 Part of object name."
+     echo "  ${SCRIPTNAME} --object-name=<[part of ]objectname>                Part of object name."
      echo "  ${SCRIPTNAME} --backup-directory=<path>                           Backup directory path."
      echo "  ${SCRIPTNAME} --remove-secrets=[true]|[false]                     Remove secrets from backup."
      echo "  ${SCRIPTNAME} --help                                              This help text."
@@ -66,7 +66,7 @@ function help {
      echo "  ${SCRIPTNAME} --version                                           Display version info."
      echo ""
      echo "Examples:"
-     echo "  ${SCRIPTNAME} --namespace=myapp --objectname=app2 --remove-secrets=true"
+     echo "  ${SCRIPTNAME} --namespace=myapp --object-name=app2 --remove-secrets=true"
      echo "  ${SCRIPTNAME} --backup-global-objects=true --ignore-object-type=events,pods --remove-secrets=true"
      echo ""
      echo "Defaults:"
@@ -74,7 +74,7 @@ function help {
      echo "  --backup-global-objects=$BACKUP_GLOBALOBJECTS"
      echo "  --backup-directory=$NAME_BACKUP_GIT_REPO"
      echo "  --remove-secrets=$REMOVE_SECRETS"
-     echo "  --objectname=$OBJECTNAME"
+     echo "  --object-name=$OBJECTNAMEPART"
      echo "  --ignore-object-type=$IGNORE_OBJECTTYPES"
      echo "  --object-type=$OBJECTTYPES"
      echo ""
@@ -111,9 +111,9 @@ for PARAMETER in "$@" ; do
      elif [[ $PARAMETER =~ ^--ignore-object-types?=[a-zA-Z,]{1,}$ ]]; then
           IGNORE_OBJECTTYPES=$(echo "$PARAMETER" | sed -r "s/^--ignore-object-types?=//g")
           debug "--ignore-object-type=$IGNORE_OBJECTTYPES"
-     elif [[ $PARAMETER =~ ^--objectname?=[0-9a-zA-Z,\._\-]{1,}$ ]]; then
-          OBJECTNAME=$(echo "$PARAMETER" | sed -r "s/^--objectname?=//g")
-          debug "--objectname=$OBJECTNAME"
+     elif [[ $PARAMETER =~ ^--object-name?=[0-9a-zA-Z,\._\-]{1,}$ ]]; then
+          OBJECTNAMEPART=$(echo "$PARAMETER" | sed -r "s/^--object-name?=//g")
+          debug "--object-name=$OBJECTNAMEPART"
      elif [[ $PARAMETER =~ ^--remove-secrets?=(true|false)$ ]]; then
           REMOVE_SECRETS=$(echo "$PARAMETER" | sed -r "s/^--remove-secrets?=//g")
           debug "--remove-secret=$REMOVE_SECRETS"
@@ -131,7 +131,7 @@ debug "BACKUP_GLOBALOBJECTS='$BACKUP_GLOBALOBJECTS'"
 debug "REMOVE_SECRETS='$REMOVE_SECRETS'"
 debug "NAME_BACKUP_GIT_REPO='$NAME_BACKUP_GIT_REPO'"
 debug "DEBUG='$DEBUG_MODE'"
-debug "OBJECTNAME='$OBJECTNAME'"
+debug "OBJECTNAMEPART='$OBJECTNAMEPART'"
 debug "IGNORE_OBJECTTYPES='$IGNORE_OBJECTTYPES'"
 debug "OBJECTTYPES='$OBJECTTYPES'"
 
@@ -160,14 +160,14 @@ function COMMIT_CHANGES {
      STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep "$OBJECTNAME" | awk '{print $2}')
      if [ "$STATUS" == "new" ]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
-          printf "      new object: %-8s, %-30s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "      new object: %-8s, %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
      elif [ "$STATUS" == "modified" ]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
-          printf " modified object: %-8s, %-30s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf " modified object: %-8s, %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>dev/null
      else
-          printf "unchanged object: %-8s  %-30s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "unchanged object: %-8s  %-25s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
      fi
 }
 
@@ -190,13 +190,13 @@ touch "$NAMESPACEOBJECTSFILE"
 NAMESPACES=$(echo  "$NAMESPACES"  | sed 's/,/$|^/g')
 OBJECTTYPES=$(echo "$OBJECTTYPES" | sed 's/,/$|^/g')
 IGNORE_OBJECTTYPES=$(echo "$IGNORE_OBJECTTYPES" | sed 's/,/$|^/g')
-OBJECTNAME=$(echo "$OBJECTNAME" | sed 's/^\s*$/.*/')
+OBJECTNAMEPART=$(echo "$OBJECTNAMEPART" | sed 's/^\s*$/.*/')
 BACKUP_GLOBALOBJECTS=$(echo "$BACKUP_GLOBALOBJECTS" | sed 's/true/GLOBAL/' | sed 's/false//')
 
 debug "namespace regular expression:   ^$NAMESPACES$"
 debug "object type regular expression: ^$OBJECTTYPES$"
 debug "ignore object type regular expression: ^$IGNORE_OBJECTTYPES$"
-debug "object name regular expression: $OBJECTNAME"
+debug "object name part regular expression: $OBJECTNAMEPART"
 debug "backup global objects: $BACKUP_GLOBALOBJECTS"
 
 for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
@@ -214,7 +214,7 @@ do
                          grep -P "(^$OBJECTTYPES$)" )
      do
           for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' \
-                                                                                                     | grep -P "$OBJECTNAME" \
+                                                                                                     | grep -P "$OBJECTNAMEPART" \
                                                                                                      | sort` 
           do
               OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///")
@@ -222,6 +222,9 @@ do
               CHECKNAMESPACE=""
               # Namespace or project:
               if [[ "$OBJECTTYPE" == "namespace" ]] || [[ "$OBJECTTYPE" == "project" ]]; then
+                   if [[ "$OBJECTNAME" != "$PROJECT" ]]; then
+                        continue
+                   fi
                    CHECKNAMESPACE=$PROJECT
               # try to match object type with GLOBAL object type cache file
               elif grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
