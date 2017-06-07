@@ -31,7 +31,7 @@ Prerequisites:
 * 'oc client' and 'git' installed on your system.  
 * Https access to the OpenShift cluster.  
 * Login credetieels for the OpenShift cluster.   
-* Clone the repo to your system (or copy the 'ose-backup.sh' script and the 'oc' file).
+* Clone this repo on your system (or copy the 'ose-backup.sh' script and the 'oc' file).
    
 ## How to use  
   
@@ -63,7 +63,7 @@ Examples:
   ose-backup.sh --backup-global-objects=true --ignore-object-type=events,pods --remove-secrets=true
 
 Defaults:
-  --namespace=cloudforms,default,kube-system,logging,management-infra,openshift,openshift3,openshift-infra,polaris,rabobank,red-yellow-and-blue,ted
+  --namespace=cloudforms,default,kube-system,logging,management-infra,openshift,openshift3,openshift-infra,my-app,rabobank,red-yellow-and-blue,ted
   --backup-global-objects=false
   --backup-directory=/home/sluist/openshift-backup-files
   --remove-secrets=false
@@ -76,39 +76,39 @@ Defaults:
   
 Backup of a single namespace (tokens, keys, certificates, password, etc removed from secrets):  
 ````
-$ ./ose-backup.sh --namespace=polaris --remove-secrets=true
-unchanged object: 1         polaris         build                           pizza-session-10
-unchanged object: 2         polaris         build                           pizza-session-11
-      new object: 1         polaris         build                           pizza-session-12
-unchanged object: 3         polaris         buildconfig                     pizza-session
-unchanged object: 4         polaris         deploymentconfig                pizza-session
-unchanged object: 5         polaris         endpoints                       pizza-session
-unchanged object: 6         polaris         imagestream                     pizza-session
-unchanged object: 7         polaris         namespace                       polaris
-unchanged object: 8         polaris         pod                             pizza-session-11-build
-unchanged object: 9         polaris         pod                             pizza-session-12-build
-      new object: 2         polaris         pod                             pizza-session-1-n99f3
-unchanged object: 11        polaris         policybinding                   :default
-unchanged object: 12        polaris         project                         polaris
-unchanged object: 13        polaris         replicationcontroller           pizza-session-1
-unchanged object: 14        polaris         rolebinding                     admin
-unchanged object: 15        polaris         rolebinding                     system:deployers
-unchanged object: 16        polaris         rolebinding                     system:image-builders
-unchanged object: 17        polaris         rolebinding                     system:image-pullers
-unchanged object: 18        polaris         rolebinding                     view
-unchanged object: 19        polaris         secret                          builder-dockercfg-ozhjy
-unchanged object: 20        polaris         secret                          builder-token-3ndh0
-unchanged object: 21        polaris         secret                          builder-token-a71ue
-unchanged object: 22        polaris         secret                          default-dockercfg-zlhnx
-unchanged object: 23        polaris         secret                          default-token-gix87
-unchanged object: 24        polaris         secret                          default-token-rav2c
-unchanged object: 25        polaris         secret                          deployer-dockercfg-8jwos
-unchanged object: 26        polaris         secret                          deployer-token-4n2le
-unchanged object: 27        polaris         secret                          deployer-token-ejpxq
-unchanged object: 28        polaris         service                         pizza-session
-unchanged object: 29        polaris         serviceaccount                  builder
-unchanged object: 30        polaris         serviceaccount                  default
-unchanged object: 31        polaris         serviceaccount                  deployer
+$ ./ose-backup.sh --namespace=my-app --remove-secrets=true
+unchanged object: 1         my-app         build                           pizza-session-10
+unchanged object: 2         my-app         build                           pizza-session-11
+      new object: 1         my-app         build                           pizza-session-12
+unchanged object: 3         my-app         buildconfig                     pizza-session
+unchanged object: 4         my-app         deploymentconfig                pizza-session
+unchanged object: 5         my-app         endpoints                       pizza-session
+unchanged object: 6         my-app         imagestream                     pizza-session
+unchanged object: 7         my-app         namespace                       my-app
+unchanged object: 8         my-app         pod                             pizza-session-11-build
+unchanged object: 9         my-app         pod                             pizza-session-12-build
+      new object: 2         my-app         pod                             pizza-session-1-n99f3
+unchanged object: 11        my-app         policybinding                   :default
+unchanged object: 12        my-app         project                         my-app
+unchanged object: 13        my-app         replicationcontroller           pizza-session-1
+unchanged object: 14        my-app         rolebinding                     admin
+unchanged object: 15        my-app         rolebinding                     system:deployers
+unchanged object: 16        my-app         rolebinding                     system:image-builders
+unchanged object: 17        my-app         rolebinding                     system:image-pullers
+unchanged object: 18        my-app         rolebinding                     view
+unchanged object: 19        my-app         secret                          builder-dockercfg-ozhjy
+unchanged object: 20        my-app         secret                          builder-token-3ndh0
+unchanged object: 21        my-app         secret                          builder-token-a71ue
+unchanged object: 22        my-app         secret                          default-dockercfg-zlhnx
+unchanged object: 23        my-app         secret                          default-token-gix87
+unchanged object: 24        my-app         secret                          default-token-rav2c
+unchanged object: 25        my-app         secret                          deployer-dockercfg-8jwos
+unchanged object: 26        my-app         secret                          deployer-token-4n2le
+unchanged object: 27        my-app         secret                          deployer-token-ejpxq
+unchanged object: 28        my-app         service                         pizza-session
+unchanged object: 29        my-app         serviceaccount                  builder
+unchanged object: 30        my-app         serviceaccount                  default
+unchanged object: 31        my-app         serviceaccount                  deployer
 ---------------------------------------------------
 Number of objects in this namespace:          32
 Number of new objects in this namespace:      1
@@ -119,3 +119,57 @@ Number of objects matched:    32
 Number of new objects:        1
 Number of modified objects:   0
 ````
+  
+Result in backup directory:
+````
+$ find openshift-backup-files/my-app -name '*'
+openshift-backup-files/my-app
+openshift-backup-files/my-app/replicationcontroller
+openshift-backup-files/my-app/replicationcontroller/pizza-session-1
+openshift-backup-files/my-app/deploymentconfig
+openshift-backup-files/my-app/deploymentconfig/pizza-session
+openshift-backup-files/my-app/rolebinding
+openshift-backup-files/my-app/rolebinding/view
+openshift-backup-files/my-app/rolebinding/system:image-builders
+openshift-backup-files/my-app/rolebinding/system:image-pullers
+openshift-backup-files/my-app/rolebinding/admin
+openshift-backup-files/my-app/rolebinding/system:deployers
+openshift-backup-files/my-app/service
+openshift-backup-files/my-app/service/pizza-session
+openshift-backup-files/my-app/endpoints
+openshift-backup-files/my-app/endpoints/pizza-session
+openshift-backup-files/my-app/project
+openshift-backup-files/my-app/project/my-app
+openshift-backup-files/my-app/imagestream
+openshift-backup-files/my-app/imagestream/pizza-session
+openshift-backup-files/my-app/serviceaccount
+openshift-backup-files/my-app/serviceaccount/default
+openshift-backup-files/my-app/serviceaccount/deployer
+openshift-backup-files/my-app/serviceaccount/builder
+openshift-backup-files/my-app/pod
+openshift-backup-files/my-app/pod/pizza-session-1-js0zq
+openshift-backup-files/my-app/pod/pizza-session-1-n99f3
+openshift-backup-files/my-app/pod/pizza-session-1-jpkfq
+openshift-backup-files/my-app/pod/pizza-session-12-build
+openshift-backup-files/my-app/pod/pizza-session-11-build
+openshift-backup-files/my-app/build
+openshift-backup-files/my-app/build/pizza-session-11
+openshift-backup-files/my-app/build/pizza-session-12
+openshift-backup-files/my-app/policybinding
+openshift-backup-files/my-app/policybinding/:default
+openshift-backup-files/my-app/secret
+openshift-backup-files/my-app/secret/deployer-token-4n2le
+openshift-backup-files/my-app/secret/deployer-dockercfg-8jwos
+openshift-backup-files/my-app/secret/deployer-token-ejpxq
+openshift-backup-files/my-app/secret/builder-token-3ndh0
+openshift-backup-files/my-app/secret/builder-dockercfg-ozhjy
+openshift-backup-files/my-app/secret/default-token-rav2c
+openshift-backup-files/my-app/secret/default-token-gix87
+openshift-backup-files/my-app/secret/default-dockercfg-zlhnx
+openshift-backup-files/my-app/secret/builder-token-a71ue
+openshift-backup-files/my-app/namespace
+openshift-backup-files/my-app/namespace/my-app
+openshift-backup-files/my-app/buildconfig
+openshift-backup-files/my-app/buildconfig/pizza-session
+````
+   
