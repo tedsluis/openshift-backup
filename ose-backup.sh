@@ -144,6 +144,10 @@ OBJECTCOUNT=0
 NEWOBJECTCOUNT=0
 MODIFIEDOBJECTCOUNT=0
 PROJECTCOUNT=0
+OBJECTCOUNTPROJECT=0
+NEWOBJECTCOUNTPROJECT=0
+MODIFIEDOBJECTCOUNTPROJECT=0
+
 
 # Create directory if not exists
 function MAKE_DIRECTORY {
@@ -160,14 +164,17 @@ function COMMIT_CHANGES {
      OBJECTTYPE=$2
      OBJECTNAME=$3
      OBJECTCOUNT=$(($OBJECTCOUNT + 1))
+     OBJECTCOUNTPROJECT=$(($OBJECTCOUNTPROJECT + 1))
      git --work-tree="$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
      STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep "$OBJECTNAME" | awk '{print $2}')
      if [ "$STATUS" == "new" ]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
+          NEWOBJECTCOUNTPROJECT=$(($NEWOBJECTCOUNTPROJECT + 1))
           printf "      new object: %-8s, %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
      elif [ "$STATUS" == "modified" ]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
+          MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
           printf " modified object: %-8s, %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>dev/null
      else
@@ -207,6 +214,10 @@ for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
                                                       grep -P "(^$NAMESPACES$)" | \
                                                       sort) "$BACKUP_GLOBALOBJECTS")
 do
+     # counters
+     OBJECTCOUNTPROJECT=0
+     NEWOBJECTCOUNTPROJECT=0
+     MODIFIEDOBJECTCOUNTPROJECT=0
      PROJECTCOUNT=$(($PROJECTCOUNT + 1))
      MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/$PROJECT"
      for OBJECTTYPE in $(sed -n -e '/^_oc_get/,/^}/ p' "$OC_COMPLETION_FILE" | \
@@ -282,9 +293,13 @@ do
               fi
           done
      done
+     echo "---------------------------------------------------"
+     echo "Number of objects in this namespace:          $OBJECTCOUNTPROJECT"
+     echo "Number of new objects in this namespace:      $NEWOBJECTCOUNTPROJECT"
+     echo "Number of modified objects in this namespace: $MODIFIEDOBJECTCOUNTPROJECT"
 done
-
-debug "Number of projects matched: $PROJECTCOUNT"
-debug "Number of objects matched:  $OBJECTCOUNT"
-debug "Number of new objects:      $NEWOBJECTCOUNT"
-debug "Number of modified objects: $MODIFIEDOBJECTCOUNT"
+echo "---------------------------------------------------"
+echo "Number of namespaces matched: $PROJECTCOUNT"
+echo "Number of objects matched:    $OBJECTCOUNT"
+echo "Number of new objects:        $NEWOBJECTCOUNT"
+echo "Number of modified objects:   $MODIFIEDOBJECTCOUNT"
