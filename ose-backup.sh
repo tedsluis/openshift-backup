@@ -23,8 +23,12 @@ fi
 CURRENT_DIRECTORY=$(pwd)
 OC_COMPLETION_FILE="/etc/bash_completion.d/oc"
 if [ ! -f "$OC_COMPLETION_FILE" ]; then
+     if [ ! -f "$CURRENT_DIRECTORY/oc" ]; then
+          echo "No '$OC_COMPLETION_FILE' or '$CURRENT_DIRECTORY/oc' file found. Can not continue!"
+          exit 1
+     fi
      echo "No '$OC_COMPLETION_FILE' file found. Now using '$CURRENT_DIRECTORY/oc' to get object types."
-     OC_COMPLETION_FILE="CURRENT_DIRECTORY/oc"
+     OC_COMPLETION_FILE="$CURRENT_DIRECTORY/oc"
 fi
 
 # Get all your namespaces:
