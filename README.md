@@ -48,6 +48,7 @@ Only new and modified objects will be backed up. If no objects were changed noth
   
 This list of OpenShift object types may not contain all known objects. Besure you use the latest oc client with auto completion!
   
+|---|---|---| 
 | appliedclusterresourcequota | build,buildconfig | certificatesigningrequest | cluster | 
 | clusternetwork | clusterpolicy | clusterpolicybinding | clusterresourcequota | 
 | clusterrole | clusterrolebinding | componentstatus | configmap | 
