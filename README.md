@@ -12,7 +12,7 @@
     
 ## Features  
   
-This 'ose-backup.sh' script is meant to back up OpenShift 3.+ objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components and applications. The yaml files will be stored in a git repo. The script does have the following features:  
+This '**ose-backup.sh**' script is meant to back up OpenShift 3.+ objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components and applications. The yaml files will be stored in a git repo. The script does have the following features:  
 * The ability to back up all OpenShift object types.  
 * Stores each namespace in a different directory.  
 * Stores each object type in a different subdirectory.  
@@ -22,38 +22,40 @@ This 'ose-backup.sh' script is meant to back up OpenShift 3.+ objects to files i
     * objects that are global (not related to a namespace).  
     * objects of a certain object type or a list of object types.  
     * objects with a certain object name.  
-* Tokens, keys, certificates, passwords, etc can be removed from secret objects.  
+* If desired tokens, keys, certificates, passwords, etc can be removed from secret objects.  
 * You can only back up those items to which you are entitled. Only cluster-admins can backup all namespaces.  
   
 ## Prerequisites  
   
-This 'ose-backup.sh' script is written in bash and tested on RHEL7 and Fedora 25.  
-It uses the '/etc/bash_completion.d/oc' file (which comes with the oc commandline tool) to obtain all known OpenShift object types. If this file is not available on your system, it will automaticly use the 'oc' file included in this repo. Note that is file may not contain the latest OpenShift Objects! 
+This '**ose-backup.sh**' script is written in bash and tested on RHEL7 and Fedora 25.  
+It uses the '**/etc/bash_completion.d/oc**' file (which comes with the oc commandline tool) to obtain all known OpenShift object types. If this file is not available on your system, it will automaticly use the 'oc' file included in this repo. Note that is file may not contain the latest OpenShift Objects! 
   
 Prerequisites:
-* 'oc client' and 'git' installed on your system.  
+* '**oc client**' and '**git**' installed on your system.  
 * Https access to the OpenShift cluster.  
 * Login credetieels for the OpenShift cluster.   
-* Clone this repo on your system (or copy the 'ose-backup.sh' script and the 'oc' file).
+* Clone this repo on your system (or copy the '**ose-backup.sh**' script and the '**oc**' file).
    
 ## How to use  
   
-By default the script will create a directory '&lt;your home directory&gt;/openshift-backup-files' and initialize a new git repository in there. If you prefer an other path for the backup files you can edit the default in the script or use the option ' --backup-directory=&lt;path&gt;'.  
+By default the script will create a directory '**&lt;your home directory&gt;/openshift-backup-files**' and initialize a new git repository in there. If you prefer an other path for the backup files you can edit the default in the script or use the option '**--backup-directory=&lt;path&gt;**'.  
  
 Without any options the script will backup all your namespaces to which you are entitled. You can specify filter options to backup only specific namespaces, object types and/or object names.  
   
 Only new and modified objects will be backed up. If no objects were changed nothing will be added to the backup repository.  
   
 Each namespace (or project) will have its own backup directory, like:   
-  '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;'.   
+'**&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/**'.  
+   
 In that directory there will be sub-directories for each object type, for example:   
-  '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/&lt;object type name&gt;'.   
+'**&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/&lt;object type name&gt;/**'.   
+  
 Global objects (which are not related to a namespace) will be stored in a directory called:    
-  '&lt;your home directory&gt;/openshift-backup-files/GLOBAL'.   
+'**&lt;your home directory&gt;/openshift-backup-files/GLOBAL/**'.   
   
 ## Object types  
   
-This list of OpenShift object types may not contain all known objects. Besure you use the latest oc client with auto completion!
+OpenShift objects are a superset of Kubernetes objects.  
   
 |   |   |   |   |  
 |---|---|---|---|  
@@ -75,6 +77,8 @@ This list of OpenShift object types may not contain all known objects. Besure yo
 | storageclass | template | thirdpartyresource | thirdpartyresourcedata | 
 | user | useridentitymapping| | |  
   
+This list of OpenShift object types may not contain all known objects. Besure you use the latest oc client with auto completion!
+   
 ## Help text  
   
 ````
