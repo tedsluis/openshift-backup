@@ -103,7 +103,7 @@ Examples:
   ose-backup.sh --backup-global-objects=true --ignore-object-type=events,pods --remove-secrets=true
 
 Defaults:
-  --namespace=cloudforms,default,kube-system,logging,management-infra,openshift,openshift3,openshift-infra,my-app,rabobank,red-yellow-and-blue,ted
+  --namespace=cloudforms,default,kube-system,logging,management-infra,openshift,openshift3,openshift-infra,my-app,red-yellow-and-blue,ted
   --backup-global-objects=false
   --backup-directory=/home/sluist/openshift-backup-files
   --remove-secrets=false
@@ -231,7 +231,7 @@ metadata:
   uid: ed5c727c-3b0b-11e7-b48d-005056bb0dc6
 spec:
   nodeSelector:
-    kubernetes.io/hostname: atom6014.linux.rabobank.nl
+    kubernetes.io/hostname: atom6014.linux.mydomain.nl
   output:
     to:
       kind: ImageStreamTag
@@ -242,7 +242,7 @@ spec:
   source:
     contextDir: catch-them-all
     git:
-      uri: https://git.eu.rabonet.com/my-app/my-app.git
+      uri: https://git.eu.mydomain.com/my-app/my-app.git
     type: Git
   strategy:
     sourceStrategy:
@@ -253,7 +253,7 @@ spec:
     type: Source
   triggers:
   - github:
-      secret: qM438RgWve3VXM7vW0AA
+      secret: === secret removed due to security risks===
     type: GitHub
   - generic:
       secret: 
@@ -265,5 +265,14 @@ spec:
 status:
   lastVersion: 12
 ````
+  
+## Security considerations
+  
+A backup of OpenShift objects can be very convenient. But there are also risks. Keep in mind that there may be tokens, keys, certificates and passwords stored in the objects. And not only in the secret objects. Buildconfigs, deploymentconfigs, pods and other objects can also contain sensitive data. Be sure only people how are allowed to have access can have access to the backup files. Never push the backup to a public accessible git repository.  
+  
+You can avoid backing up secrets using the option '--remove-secrets=true'.  
+  
+And you can remove file with sensitive data from the backup git repo using: https://help.github.com/articles/removing-sensitive-data-from-a-repository
+  
 
-
+   
