@@ -6,21 +6,24 @@
       * [Features](#features)  
       * [prerequisites](#prerequisites)  
       * [How to use](#how-to-use) 
+      * [Object types](#object-types)  
       * [Help text](#help-text)  
+      * [Example](#example)  
     
 ## Features  
   
-This 'ose-backup.sh' script is meant to back up OpenShift 3.+ objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components or applications. The yaml files will be stored in a git repo. The script does have the following features:  
+This 'ose-backup.sh' script is meant to back up OpenShift 3.+ objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components and applications. The yaml files will be stored in a git repo. The script does have the following features:  
 * The ability to back up all OpenShift object types.  
 * Stores each namespace in a different directory.  
 * Stores each object type in a different subdirectory.  
 * Each object will be a committed to the git repo, so changes in time can be tracked back.  
 * A back up can be made of:  
-    * one or more namespaces.  
+    * objects in a single namespace or a list of namespaces.  
     * objects that are global (not related to a namespace).  
-    * one or more object types.  
-    * objects with a certain name.  
+    * objects of a certain object type or a list of object types.  
+    * objects with a certain object name.  
 * Tokens, keys, certificates, passwords, etc can be removed from secret objects.  
+* You can only back up those items to which you are entitled. Only cluster-admins can backup all namespaces.  
   
 ## Prerequisites  
   
@@ -36,8 +39,32 @@ Prerequisites:
 ## How to use  
   
 By default the script will create a directory '&lt;your home directory&gt;/openshift-backup-files' and initialize a new git repository in there. If you prefer an other path for the backup files you can edit the default in the script or use the option ' --backup-directory=&lt;path&gt;'.  
+ 
+Without any options the script will backup all your namespaces to which you are entitled. You can specify filter options to backup only specific namespaces, object types and/or object names.  
   
-You can only back up those items to which you are entitled. Only cluster-admins can backup all namespaces.
+Only new and modified objects will be backed up. If no objects were changed nothing will be added to the backup repository.  
+
+## Object types  
+  
+This list of OpenShift object types may not contain all known objects. Besure you use the latest oc client with auto completion!
+  
+| appliedclusterresourcequota | build,buildconfig | certificatesigningrequest | cluster | 
+| clusternetwork | clusterpolicy | clusterpolicybinding | clusterresourcequota | 
+| clusterrole | clusterrolebinding | componentstatus | configmap | 
+| daemonset | deployment | deploymentconfig | egressnetworkpolicy | 
+| endpoints | event | group | horizontalpodautoscaler | 
+| hostsubnet | identity | image | imagestream | 
+| imagestreamimage | imagestreamtag | ingress | ispersonalsubjectaccessreview | 
+| job | limitrange | namespace | netnamespace | 
+| networkpolicy | node | oauthaccesstoken | oauthauthorizetoken |
+| oauthclient | oauthclientauthorization | persistentvolume | persistentvolumeclaim |
+| petset | pod | poddisruptionbudget | podsecuritypolicy | 
+| podtemplate | policy | policybinding | project | 
+| replicaset | replicationcontroller | resourcequota | role |
+| rolebinding | route | scheduledjob | secret |
+| securitycontextconstraints | service | serviceaccount | storageclass |
+| template | thirdpartyresource | thirdpartyresourcedata | user |
+| useridentitymapping| | |
   
 ## Help text  
   
@@ -74,7 +101,7 @@ Defaults:
   
 ## Example
   
-Backup of a single namespace (tokens, keys, certificates, password, etc removed from secrets):  
+A backup of a single namespace (tokens, keys, certificates, password, etc removed from secrets):  
 ````
 $ ./ose-backup.sh --namespace=my-app --remove-secrets=true
 unchanged object: 1         my-app         build                           pizza-session-10
@@ -120,7 +147,7 @@ Number of new objects:        1
 Number of modified objects:   0
 ````
   
-Result in backup directory:
+Result in the backup directory:
 ````
 $ find openshift-backup-files/my-app -name '*'
 openshift-backup-files/my-app
@@ -172,4 +199,58 @@ openshift-backup-files/my-app/namespace/my-app
 openshift-backup-files/my-app/buildconfig
 openshift-backup-files/my-app/buildconfig/pizza-session
 ````
-   
+     
+Example of a buildconfig yaml file:
+````
+$ cat ~/openshift-backup-files/my-app/buildconfig/pizza-session
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: 2017-05-17T14:20:07Z
+  labels:
+    app: pizza-session
+  name: pizza-session
+  namespace: my-app
+  resourceVersion: "8506931"
+  selfLink: /oapi/v1/namespaces/my-app/buildconfigs/pizza-session
+  uid: ed5c727c-3b0b-11e7-b48d-005056bb0dc6
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: atom6014.linux.rabobank.nl
+  output:
+    to:
+      kind: ImageStreamTag
+      name: pizza-session:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    contextDir: catch-them-all
+    git:
+      uri: https://git.eu.rabonet.com/my-app/pizza-session.git
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: nodejs:4
+        namespace: openshift
+    type: Source
+  triggers:
+  - github:
+      secret: qM438RgWve3VXM7vW0AA
+    type: GitHub
+  - generic:
+      secret: 
+    type: Generic
+  - type: ConfigChange
+  - imageChange:
+      lastTriggeredImageID: registry.access.redhat.com/rhscl/nodejs-4-rhel7@sha256:a7d1f9c3058c197a97eaca339dcbbba4596429df0fb1bcd1578a9ed6f523b2ee
+    type: ImageChange
+status:
+  lastVersion: 12
+````
+
+
