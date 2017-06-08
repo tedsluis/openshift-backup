@@ -44,9 +44,12 @@ Without any options the script will backup all your namespaces to which you are 
   
 Only new and modified objects will be backed up. If no objects were changed nothing will be added to the backup repository.  
   
-Each namespace (or project) will have its own backup directory, like: '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;'.   
-In that directory there will be sub-directories for each object type, for example: '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/&lt;object type name&gt;'.   
-Global objects (which are not related to a namespace) will be stored in a directory called: '&lt;your home directory&gt;/openshift-backup-files/GLOBAL'.   
+Each namespace (or project) will have its own backup directory, like:   
+  '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;'.   
+In that directory there will be sub-directories for each object type, for example:   
+  '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/&lt;object type name&gt;'.   
+Global objects (which are not related to a namespace) will be stored in a directory called:    
+  '&lt;your home directory&gt;/openshift-backup-files/GLOBAL'.   
   
 ## Object types  
   
