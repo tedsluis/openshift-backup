@@ -43,6 +43,8 @@ By default the script will create a directory '&lt;your home directory&gt;/opens
 Without any options the script will backup all your namespaces to which you are entitled. You can specify filter options to backup only specific namespaces, object types and/or object names.  
   
 Only new and modified objects will be backed up. If no objects were changed nothing will be added to the backup repository.  
+  
+Each namespace (or project) will have its own backup directory, like: '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;'. In that directory there will be sub-directories for each object type, for example: '&lt;your home directory&gt;/openshift-backup-files/&lt;any namespace&gt;/&lt;object type name&gt;'. Global objects (which are not related to a namespace) will be stored in a directory  called '&lt;your home directory&gt;/openshift-backup-files/GLOBAL'. 
 
 ## Object types  
   
@@ -106,20 +108,20 @@ Defaults:
 A backup of a single namespace (tokens, keys, certificates, password, etc removed from secrets):  
 ````
 $ ./ose-backup.sh --namespace=my-app --remove-secrets=true
-unchanged object: 1         my-app         build                           pizza-session-10
-unchanged object: 2         my-app         build                           pizza-session-11
-      new object: 1         my-app         build                           pizza-session-12
-unchanged object: 3         my-app         buildconfig                     pizza-session
-unchanged object: 4         my-app         deploymentconfig                pizza-session
-unchanged object: 5         my-app         endpoints                       pizza-session
-unchanged object: 6         my-app         imagestream                     pizza-session
+unchanged object: 1         my-app         build                           my-app-10
+unchanged object: 2         my-app         build                           my-app-11
+      new object: 1         my-app         build                           my-app-12
+unchanged object: 3         my-app         buildconfig                     my-app
+unchanged object: 4         my-app         deploymentconfig                my-app
+unchanged object: 5         my-app         endpoints                       my-app
+unchanged object: 6         my-app         imagestream                     my-app
 unchanged object: 7         my-app         namespace                       my-app
-unchanged object: 8         my-app         pod                             pizza-session-11-build
-unchanged object: 9         my-app         pod                             pizza-session-12-build
-      new object: 2         my-app         pod                             pizza-session-1-n99f3
+unchanged object: 8         my-app         pod                             my-app-11-build
+unchanged object: 9         my-app         pod                             my-app-12-build
+      new object: 2         my-app         pod                             my-app-1-n99f3
 unchanged object: 11        my-app         policybinding                   :default
 unchanged object: 12        my-app         project                         my-app
-unchanged object: 13        my-app         replicationcontroller           pizza-session-1
+unchanged object: 13        my-app         replicationcontroller           my-app-1
 unchanged object: 14        my-app         rolebinding                     admin
 unchanged object: 15        my-app         rolebinding                     system:deployers
 unchanged object: 16        my-app         rolebinding                     system:image-builders
@@ -134,7 +136,7 @@ unchanged object: 24        my-app         secret                          defau
 unchanged object: 25        my-app         secret                          deployer-dockercfg-8jwos
 unchanged object: 26        my-app         secret                          deployer-token-4n2le
 unchanged object: 27        my-app         secret                          deployer-token-ejpxq
-unchanged object: 28        my-app         service                         pizza-session
+unchanged object: 28        my-app         service                         my-app
 unchanged object: 29        my-app         serviceaccount                  builder
 unchanged object: 30        my-app         serviceaccount                  default
 unchanged object: 31        my-app         serviceaccount                  deployer
@@ -151,60 +153,60 @@ Number of modified objects:   0
   
 Result in the backup directory:
 ````
-$ find openshift-backup-files/my-app -name '*'
-openshift-backup-files/my-app
-openshift-backup-files/my-app/replicationcontroller
-openshift-backup-files/my-app/replicationcontroller/pizza-session-1
-openshift-backup-files/my-app/deploymentconfig
-openshift-backup-files/my-app/deploymentconfig/pizza-session
-openshift-backup-files/my-app/rolebinding
-openshift-backup-files/my-app/rolebinding/view
-openshift-backup-files/my-app/rolebinding/system:image-builders
-openshift-backup-files/my-app/rolebinding/system:image-pullers
-openshift-backup-files/my-app/rolebinding/admin
-openshift-backup-files/my-app/rolebinding/system:deployers
-openshift-backup-files/my-app/service
-openshift-backup-files/my-app/service/pizza-session
-openshift-backup-files/my-app/endpoints
-openshift-backup-files/my-app/endpoints/pizza-session
-openshift-backup-files/my-app/project
-openshift-backup-files/my-app/project/my-app
-openshift-backup-files/my-app/imagestream
-openshift-backup-files/my-app/imagestream/pizza-session
-openshift-backup-files/my-app/serviceaccount
-openshift-backup-files/my-app/serviceaccount/default
-openshift-backup-files/my-app/serviceaccount/deployer
-openshift-backup-files/my-app/serviceaccount/builder
-openshift-backup-files/my-app/pod
-openshift-backup-files/my-app/pod/pizza-session-1-js0zq
-openshift-backup-files/my-app/pod/pizza-session-1-n99f3
-openshift-backup-files/my-app/pod/pizza-session-1-jpkfq
-openshift-backup-files/my-app/pod/pizza-session-12-build
-openshift-backup-files/my-app/pod/pizza-session-11-build
-openshift-backup-files/my-app/build
-openshift-backup-files/my-app/build/pizza-session-11
-openshift-backup-files/my-app/build/pizza-session-12
-openshift-backup-files/my-app/policybinding
-openshift-backup-files/my-app/policybinding/:default
-openshift-backup-files/my-app/secret
-openshift-backup-files/my-app/secret/deployer-token-4n2le
-openshift-backup-files/my-app/secret/deployer-dockercfg-8jwos
-openshift-backup-files/my-app/secret/deployer-token-ejpxq
-openshift-backup-files/my-app/secret/builder-token-3ndh0
-openshift-backup-files/my-app/secret/builder-dockercfg-ozhjy
-openshift-backup-files/my-app/secret/default-token-rav2c
-openshift-backup-files/my-app/secret/default-token-gix87
-openshift-backup-files/my-app/secret/default-dockercfg-zlhnx
-openshift-backup-files/my-app/secret/builder-token-a71ue
-openshift-backup-files/my-app/namespace
-openshift-backup-files/my-app/namespace/my-app
-openshift-backup-files/my-app/buildconfig
-openshift-backup-files/my-app/buildconfig/pizza-session
+$ find ~/openshift-backup-files/my-app -name '*'
+~/openshift-backup-files/my-app
+~/openshift-backup-files/my-app/replicationcontroller
+~/openshift-backup-files/my-app/replicationcontroller/my-app-1
+~/openshift-backup-files/my-app/deploymentconfig
+~/openshift-backup-files/my-app/deploymentconfig/my-app
+~/openshift-backup-files/my-app/rolebinding
+~/openshift-backup-files/my-app/rolebinding/view
+~/openshift-backup-files/my-app/rolebinding/system:image-builders
+~/openshift-backup-files/my-app/rolebinding/system:image-pullers
+~/openshift-backup-files/my-app/rolebinding/admin
+~/openshift-backup-files/my-app/rolebinding/system:deployers
+~/openshift-backup-files/my-app/service
+~/openshift-backup-files/my-app/service/my-app
+~/openshift-backup-files/my-app/endpoints
+~/openshift-backup-files/my-app/endpoints/my-app
+~/openshift-backup-files/my-app/project
+~/openshift-backup-files/my-app/project/my-app
+~/openshift-backup-files/my-app/imagestream
+~/openshift-backup-files/my-app/imagestream/my-app
+~/openshift-backup-files/my-app/serviceaccount
+~/openshift-backup-files/my-app/serviceaccount/default
+~/openshift-backup-files/my-app/serviceaccount/deployer
+~/openshift-backup-files/my-app/serviceaccount/builder
+~/openshift-backup-files/my-app/pod
+~/openshift-backup-files/my-app/pod/my-app-1-js0zq
+~/openshift-backup-files/my-app/pod/my-app-1-n99f3
+~/openshift-backup-files/my-app/pod/my-app-1-jpkfq
+~/openshift-backup-files/my-app/pod/my-app-12-build
+~/openshift-backup-files/my-app/pod/my-app-11-build
+~/openshift-backup-files/my-app/build
+~/openshift-backup-files/my-app/build/my-app-11
+~/openshift-backup-files/my-app/build/my-app-12
+~/openshift-backup-files/my-app/policybinding
+~/openshift-backup-files/my-app/policybinding/:default
+~/openshift-backup-files/my-app/secret
+~/openshift-backup-files/my-app/secret/deployer-token-4n2le
+~/openshift-backup-files/my-app/secret/deployer-dockercfg-8jwos
+~/openshift-backup-files/my-app/secret/deployer-token-ejpxq
+~/openshift-backup-files/my-app/secret/builder-token-3ndh0
+~/openshift-backup-files/my-app/secret/builder-dockercfg-ozhjy
+~/openshift-backup-files/my-app/secret/default-token-rav2c
+~/openshift-backup-files/my-app/secret/default-token-gix87
+~/openshift-backup-files/my-app/secret/default-dockercfg-zlhnx
+~/openshift-backup-files/my-app/secret/builder-token-a71ue
+~/openshift-backup-files/my-app/namespace
+~/openshift-backup-files/my-app/namespace/my-app
+~/openshift-backup-files/my-app/buildconfig
+~/openshift-backup-files/my-app/buildconfig/my-app
 ````
      
 Example of a buildconfig yaml file:
 ````
-$ cat ~/openshift-backup-files/my-app/buildconfig/pizza-session
+$ cat ~/openshift-backup-files/my-app/buildconfig/my-app
 apiVersion: v1
 kind: BuildConfig
 metadata:
@@ -212,11 +214,11 @@ metadata:
     openshift.io/generated-by: OpenShiftNewApp
   creationTimestamp: 2017-05-17T14:20:07Z
   labels:
-    app: pizza-session
-  name: pizza-session
+    app: my-app
+  name: my-app
   namespace: my-app
   resourceVersion: "8506931"
-  selfLink: /oapi/v1/namespaces/my-app/buildconfigs/pizza-session
+  selfLink: /oapi/v1/namespaces/my-app/buildconfigs/my-app
   uid: ed5c727c-3b0b-11e7-b48d-005056bb0dc6
 spec:
   nodeSelector:
@@ -224,14 +226,14 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: pizza-session:latest
+      name: my-app:latest
   postCommit: {}
   resources: {}
   runPolicy: Serial
   source:
     contextDir: catch-them-all
     git:
-      uri: https://git.eu.rabonet.com/my-app/pizza-session.git
+      uri: https://git.eu.rabonet.com/my-app/my-app.git
     type: Git
   strategy:
     sourceStrategy:
