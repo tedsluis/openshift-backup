@@ -167,18 +167,19 @@ function COMMIT_CHANGES {
      OBJECTCOUNTPROJECT=$(($OBJECTCOUNTPROJECT + 1))
      git --work-tree="$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
      STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep "$OBJECTNAME" | awk '{print $2}')
+     debug "2: PROJECT=$PROJECT, OBJECTTYPE=$OBJECTTYPE, OBJECTNAME=$OBJECTNAME, STATUS=$STATUS"
      if [ "$STATUS" == "new" ]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
           NEWOBJECTCOUNTPROJECT=$(($NEWOBJECTCOUNTPROJECT + 1))
-          printf "      new object: %-8s, %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "      new objects: %-8s  %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
      elif [ "$STATUS" == "modified" ]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
           MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
-          printf " modified object: %-8s, %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf " modified objects: %-8s  %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>dev/null
      else
-          printf "unchanged object: %-8s  %-25s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "unchanged objects: %-8s  %-25s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
      fi
 }
 
@@ -261,6 +262,7 @@ do
                         echo "$OBJECTTYPE" >> "$NAMESPACEOBJECTSFILE"
                    fi
               fi
+              debug "1: PROJECT=$PROJECT, CHECKNAMESPACE=$CHECKNAMESPACE, OBJECTTYPE=$OBJECTTYPE, OBJECTNAME=$OBJECTNAME"
               if [ -z "$CHECKNAMESPACE" ] || [ "$CHECKNAMESPACE" == "" ] ; then
                    # Must be a GLOBAL object type (none namespace)
                    if grep -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then
