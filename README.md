@@ -268,11 +268,10 @@ status:
   
 ## Security considerations
   
-A backup of OpenShift objects can be very convenient. But there are also risks. Keep in mind that there may be tokens, keys, certificates and passwords stored in the objects. And not only in the secret objects. Buildconfigs, deploymentconfigs, pods and other objects can also contain sensitive data. Be sure only people how are allowed to have access can have access to the backup files. Never push the backup to a public accessible git repository.  
+A backup of OpenShift objects can be very convenient. However there are also risks. Keep in mind that there may be tokens, keys, certificates and passwords, etc stored inside the objects. And not only in the secret object type. Buildconfigs, deploymentconfigs, pods and other objects can also contain sensitive data. Be sure only people how are allowed to have access can have access to the backup files. Never push the backup to a public accessible git repository.  
   
 You can avoid backing up secrets using the option '--remove-secrets=true'.  
   
-And you can remove file with sensitive data from the backup git repo using: https://help.github.com/articles/removing-sensitive-data-from-a-repository
+You can remove file with sensitive data from the backup git repo using: https://help.github.com/articles/removing-sensitive-data-from-a-repository
   
 
-   
