@@ -263,8 +263,55 @@ You can remove file with sensitive data from the backup git repo using: https://
   
 ## Service account for cluster backup
   
-To schedule a full cluster backup (e.g as cron job) you could use a serviceaccount '**object-backup**' with the cluster role '**cluster-admins**'.  
-Down here you find the steps to create such a serviceaccount and add the role:   
+To schedule a full cluster backup (e.g as cron job) you could use a serviceaccount '**object-backup**' with a custom cluster role '**cluster-admins-reader**'. This account can read all OpenShift Object.  
+  
+First create the custom  cluster role '**cluster-admins-reader**' using the following steps:  
+````
+$ oc export clusterrole cluster-admin > cluster-admin-reader-role.yaml
+````
+Edit the **cluster-admin-reader-role.yaml** file like this:
+````
+apiVersion: v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: cluster-admin-reader
+rules:
+- apiGroups:
+  - '*'
+  attributeRestrictions: null
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: null
+  attributeRestrictions: null
+  nonResourceURLs:
+  - '*'
+  resources: []
+  verbs:
+  - get
+  - list
+  - watch
+````
+Create the custom role from the file:
+````
+$ oc create -f cluster-admin-reader-role.yaml
+clusterrole "cluster-admin-reader" created
+
+$ oc describe clusterrole cluster-admin-reader
+Name:                   cluster-admin-reader
+Namespace:              <none>
+Created:                23 minutes ago
+Labels:                 <none>
+Annotations:            <none>
+Verbs                   Non-Resource URLs       Extension       Resource Names  API Groups      Resources
+[get list watch]        []                                      []              [*]             [*]
+[get list watch]        [*]                                     []              []              []
+````
+Next you can create a **object-backup** serviceaccount and add the **cluster-admin-reader** role:   
 ````
 $ oc create serviceaccount object-backup
 serviceaccount "object-backup" created
@@ -279,11 +326,11 @@ $ oc get serviceaccount | grep object-backup
 NAME            SECRETS   AGE
 object-backup   2         40s
 
-$ oc adm policy add-cluster-role-to-user cluster-admins system:serviceaccount:default:object-backup
+$ oc adm policy add-cluster-role-to-user cluster-admin-reader system:serviceaccount:default:object-backup
 
-$ oc get clusterrolebinding view
-NAME             ROLE           USERS     GROUPS       SERVICE ACCOUNTS                SUBJECTS
-cluster-admins   /cluster-admin                        default/object-backup
+$ oc get clusterrolebinding cluster-admin-reader
+NAME                   ROLE                    USERS     GROUPS    SERVICE ACCOUNTS                SUBJECTS
+cluster-admin-reader   /cluster-admin-reader                       default/object-backup
 ````
 Now get the login token from the serviceaccount:
 ````
