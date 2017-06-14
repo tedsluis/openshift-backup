@@ -9,7 +9,8 @@
       * [Object types](#object-types)  
       * [Help text](#help-text)  
       * [Example](#example)  
-      * [Service account cluster view role binding](#service-account-cluster-view-role-binding)
+      * [Service account for cluster backup](#service-account-for-cluster-backup)
+      * [View object history](#view-object-history)
     
 ## Features  
   
