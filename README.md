@@ -9,6 +9,7 @@
       * [Object types](#object-types)  
       * [Help text](#help-text)  
       * [Example](#example)  
+      * [Service account cluster view role binding](#service-account-cluster-view-role-binding)
     
 ## Features  
   
@@ -259,4 +260,108 @@ You can avoid backing up secrets using the option '--remove-secrets=true'.
   
 You can remove file with sensitive data from the backup git repo using: https://help.github.com/articles/removing-sensitive-data-from-a-repository
   
+## Service account for cluster backup
+  
+To schedule a full cluster backup (e.g as cron job) you could use a serviceaccount '**object-backup**' with the cluster role '**cluster-admins**'.  
+Down here you find the steps to create such a serviceaccount and add the role:   
+````
+$ oc create serviceaccount object-backup
+serviceaccount "object-backup" created
+
+$ oc get secrets | grep object-backup
+NAME                            TYPE                                  DATA      AGE
+object-backup-dockercfg-tu54r   kubernetes.io/dockercfg               1         12s
+object-backup-token-6oycu       kubernetes.io/service-account-token   4         12s
+object-backup-token-i8x9b       kubernetes.io/service-account-token   4         12s
+
+$ oc get serviceaccount | grep object-backup
+NAME            SECRETS   AGE
+object-backup   2         40s
+
+$ oc adm policy add-cluster-role-to-user cluster-admins system:serviceaccount:default:object-backup
+
+$ oc get clusterrolebinding view
+NAME             ROLE           USERS     GROUPS       SERVICE ACCOUNTS                SUBJECTS
+cluster-admins   /cluster-admin                        default/object-backup
+````
+Now get the login token from the serviceaccount:
+````
+$ oc describe serviceaccount object-backup
+Name:           object-backup
+Namespace:      default
+Labels:         <none>
+
+Image pull secrets:     object-backup-dockercfg-90ns0
+
+Mountable secrets:      object-backup-dockercfg-90ns0
+                        object-backup-token-uwa14
+
+Tokens:                 object-backup-token-fuscz
+                        object-backup-token-uwa14
+
+$ oc describe secret object-backup-token-uwa14
+Name:           object-backup-token-uwa14
+Namespace:      default
+Labels:         <none>
+Annotations:    kubernetes.io/service-account.name=object-backup
+                kubernetes.io/service-account.uid=edf379d5-50c9-11e7-9b2c-005056ba7317
+
+Type:   kubernetes.io/service-account-token
+
+Data
+====
+service-ca.crt: 2186 bytes
+token:          <---- MYTOKEN!! ---->
+ca.crt:         1070 bytes
+namespace:      7 bytes
+````
+Use the token to login:
+````
+$ oc login --token=<---- MYTOKEN!! ---->
+Logged into "https://master.mydomain.nl:8443" as "system:serviceaccount:default:object-backup" using the token provided.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+  * default
+    kube-system
+    logging
+    management-infra
+    openshift
+    openshift-infra
+
+Using project "default".
+$ oc whoami
+system:serviceaccount:default:object-backup
+````
+Be curefull with this token, because it is the OpenShift cluster admin!
+
+## View object history
+  
+You can view the commit history of a object file in the backup git repo using:
+````
+git log --follow -p -- <file name>
+````
+For example:
+````
+[ ~/openshift-backup-files]$ git log --follow -p -- /<my home>/openshift-backup-files/default/deploymentconfig/registry-console
+commit 548b7feb2f314fb23a8b78f947f30b47b1d903df
+Author: Ted Sluis <ted.sluis@gmail.com>
+Date:   Fri Jun 9 08:27:50 2017 +0200
+
+    Fri Jun  9 08:27:50 CEST 2017: project default, object type deploymentconfig, new object name registry-console
+
+diff --git a/default/deploymentconfig/registry-console b/default/deploymentconfig/registry-console
+new file mode 100644
+index 0000000..878c316
+--- /dev/null
++++ b/default/deploymentconfig/registry-console
+@@ -0,0 +1,109 @@
++apiVersion: v1
++kind: DeploymentConfig
++metadata:
++  annotations:
++    openshift.io/generated-by: OpenShiftNewApp
++  creationTimestamp: 2017-04-12T13:16:13Z
+etc.......
+````
 
