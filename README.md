@@ -381,7 +381,13 @@ Using project "default".
 $ oc whoami
 system:serviceaccount:default:object-backup
 ````
-Be curefull with this token, because it is the OpenShift cluster admin!
+Be curefull with this token, because it is the OpenShift cluster admin!  
+  
+Now you are able to schedule a backup as a crontab job:  
+````
+# Object backup using user ocpauto-object-backup role admin-cluster-reader
+00 04 * * * . $HOME/.bash_profile; oc login --token='<--- MYTOKEN!! ---->'; $HOME/git/openshift-backup/ose-backup.sh --backup-global-objects=true >> /tmp/openshift-object-backup.log 2>&1 ; oc logout ;
+````
 
 ## View object history
   
