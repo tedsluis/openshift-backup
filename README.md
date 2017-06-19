@@ -410,6 +410,6 @@ index 0000000..878c316
 +  annotations:
 +    openshift.io/generated-by: OpenShiftNewApp
 +  creationTimestamp: 2017-04-12T13:16:13Z
-etc.......
+etc........
 ````
 

@@ -174,7 +174,7 @@ function COMMIT_CHANGES {
           NEWOBJECTCOUNTPROJECT=$(($NEWOBJECTCOUNTPROJECT + 1))
           printf "      new objects: %-8s  %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
           git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
-     elif [ "$STATUS" == "modified" ]; then
+     elif [ "$STATUS" == "modified:" ]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
           MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
           printf " modified objects: %-8s  %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
