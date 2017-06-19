@@ -178,7 +178,7 @@ function COMMIT_CHANGES {
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
           MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
           printf " modified objects: %-8s  %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
-          git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>dev/null
+          git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>/dev/null
      else
           printf "unchanged objects: %-8s  %-25s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
      fi
