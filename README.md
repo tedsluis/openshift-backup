@@ -71,13 +71,13 @@ OpenShift objects are a superset of Kubernetes objects.
 | ispersonalsubjectaccessreview | job | limitrange | namespace | 
 | netnamespace | networkpolicy | node | oauthaccesstoken | 
 | oauthauthorizetoken | oauthclient | oauthclientauthorization | persistentvolume | 
-| persistentvolumeclaim | petset | pod | poddisruptionbudget | 
+| persistentvolumeclaim | statefulset | pod | poddisruptionbudget | 
 | podsecuritypolicy | podtemplate | policy | policybinding | 
 | project | replicaset | replicationcontroller | resourcequota | 
-| role | rolebinding | route | scheduledjob | 
-| secret | securitycontextconstraints | service | serviceaccount | 
-| storageclass | template | thirdpartyresource | thirdpartyresourcedata | 
-| user | useridentitymapping| | |  
+| role | rolebindingrestriction | rolebinding | route | 
+| cronjob | secret | securitycontextconstraints | service | 
+| serviceaccount | status | storageclass | template | 
+| thirdpartyresource | thirdpartyresourcedata | user | useridentitymapping|   
   
 This list of OpenShift object types may not contain all known objects. Besure you use the latest oc client with auto completion!
    
@@ -111,7 +111,7 @@ Defaults:
   --remove-secrets=false
   --object-name=
   --ignore-object-type=event
-  --object-type=appliedclusterresourcequota,build,buildconfig,certificatesigningrequest,cluster,clusternetwork,clusterpolicy,clusterpolicybinding,clusterresourcequota,clusterrole,clusterrolebinding,componentstatus,configmap,daemonset,deployment,deploymentconfig,egressnetworkpolicy,endpoints,event,group,horizontalpodautoscaler,hostsubnet,identity,image,imagestream,imagestreamimage,imagestreamtag,ingress,ispersonalsubjectaccessreview,job,limitrange,namespace,netnamespace,networkpolicy,node,oauthaccesstoken,oauthauthorizetoken,oauthclient,oauthclientauthorization,persistentvolume,persistentvolumeclaim,petset,pod,poddisruptionbudget,podsecuritypolicy,podtemplate,policy,policybinding,project,replicaset,replicationcontroller,resourcequota,role,rolebinding,route,scheduledjob,secret,securitycontextconstraints,service,serviceaccount,storageclass,template,thirdpartyresource,thirdpartyresourcedata,user,useridentitymapping
+  --object-type=appliedclusterresourcequota,build,buildconfig,certificatesigningrequest,cluster,clusternetwork,clusterpolicy,clusterpolicybinding,clusterresourcequota,clusterrole,clusterrolebinding,componentstatus,configmap,cronjob,daemonset,deployment,deploymentconfig,egressnetworkpolicy,endpoints,event,group,horizontalpodautoscaler,hostsubnet,identity,image,imagestream,imagestreamimage,imagestreamtag,ingress,ispersonalsubjectaccessreview,job,limitrange,namespace,netnamespace,networkpolicy,node,oauthaccesstoken,oauthauthorizetoken,oauthclient,oauthclientauthorization,persistentvolume,persistentvolumeclaim,pod,poddisruptionbudget,podsecuritypolicy,podtemplate,policy,policybinding,project,replicaset,replicationcontroller,resourcequota,role,rolebinding,rolebindingrestriction,route,secret,securitycontextconstraints,service,serviceaccount,statefulset,status,storageclass,template,thirdpartyresource,thirdpartyresourcedata,user,useridentitymapping
 ````
   
 ## Example
