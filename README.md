@@ -14,22 +14,22 @@
     
 ## Features  
   
-This '**ose-backup.sh**' script is meant to back up OpenShift 3.+ objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components and applications. The yaml files will be stored in a git repo. The script does have the following features:  
+This '**ose-backup.sh**' script is meant to back up OpenShift 3.+ (tested on 3.3, 3.4) and Origin 1.+ (tested on 1.4 and 1.5) objects to files in yaml format. These files can later be used for debugging or restoring OpenShift components and applications. The yaml files will be stored in a git repo. The script does have the following features:  
 * The ability to back up all OpenShift object types.  
 * Stores each namespace in a different directory.  
 * Stores each object type in a different subdirectory.  
 * Each object will be a committed to the git repo, so changes in time can be tracked back.  
 * A back up can be made of:  
-    * objects in a single namespace or a list of namespaces.  
-    * objects that are global (not related to a namespace).  
+    * objects in a single namespace, a list of namespaces or all namespaces.  
+    * objects that are global (not related to any namespace).  
     * objects of a certain object type or a list of object types.  
     * objects with a certain object name.  
-* If desired tokens, keys, certificates, passwords, etc can be removed from secret objects.  
-* You can only back up those items to which you are entitled. Only cluster-admins can backup all namespaces.  
+* Tokens, keys, certificates, passwords, etc can be removed from secret objects if desired.  
+* Of cource you can only back up those items to which you are entitled. This means that only cluster-admins can backup all namespaces.  
   
 ## Prerequisites  
   
-This '**ose-backup.sh**' script is written in bash and tested on RHEL7 and Fedora 25.  
+This '**ose-backup.sh**' script is written in bash and tested on RHEL7, Centos7 and Fedora 25/26.  
 It uses the '**/etc/bash_completion.d/oc**' file (which comes with the oc commandline tool) to obtain all known OpenShift object types. If this file is not available on your system, it will automaticly use the 'oc' file included in this repo. Note that is file may not contain the latest OpenShift Objects! 
   
 Prerequisites:
@@ -116,7 +116,7 @@ Defaults:
   
 ## Example
   
-A backup of a single namespace (tokens, keys, certificates, password, etc removed from secrets):  
+A backup of a single namespace (tokens, keys, certificates, password, etc will be replaced by a comment in the object files):  
 ````
 $ ./ose-backup.sh --namespace=my-app --remove-secrets=true
 unchanged object: 1         my-app         build                           my-app-10
