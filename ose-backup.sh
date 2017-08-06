@@ -165,22 +165,23 @@ function COMMIT_CHANGES {
      OBJECTNAME=$3
      OBJECTCOUNT=$(($OBJECTCOUNT + 1))
      OBJECTCOUNTPROJECT=$(($OBJECTCOUNTPROJECT + 1))
-     git --work-tree="$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
-     #STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep "$OBJECTNAME" | awk '{print $2}')
-     STATUS=$(git --work-tree="$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep -P "(new\sfile:|modified:)" | grep "$OBJECTNAME" | awk '{print $2}')
+     git -C "$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
+     STATUS=$(git -C "$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep -P "(new\sfile:|modified:)" | grep "$OBJECTNAME" | sed 's/:.*$//' | sed 's/file//' | sed 's/ //g' )
      debug "2: PROJECT=$PROJECT, OBJECTTYPE=$OBJECTTYPE, OBJECTNAME=$OBJECTNAME, STATUS=$STATUS."
-     if [ "$STATUS" == "new" ]; then
+     if [[ $STATUS =~ new ]]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
           NEWOBJECTCOUNTPROJECT=$(($NEWOBJECTCOUNTPROJECT + 1))
-          printf "      new objects: %-8s  %-25s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
-          git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
-     elif [ "$STATUS" == "modified:" ]; then
+          printf "      new objects: %-8s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
+          git -C "$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
+     elif [[ $STATUS =~ modified ]]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
           MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
-          printf " modified objects: %-8s  %-25s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
-          git --work-tree="$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>/dev/null
+          printf " modified objects: %-8s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
+          git -C "$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>/dev/null
+     elif [[ $DEBUG_MODE == "true" ]]; then
+          printf "unchanged objects: %-8s  %-30s  %-50s \n" "$OBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
      else
-          printf "unchanged objects: %-8s  %-25s  %-30s  %-50s \n" "$OBJECTCOUNT" "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          echo -en "processing objects: $OBJECTCOUNT \r"
      fi
 }
 
@@ -216,6 +217,7 @@ for PROJECT in $(echo $(oc get project --no-headers | awk '{print $1}' | \
                                                       grep -P "(^$NAMESPACES$)" | \
                                                       sort) "$BACKUP_GLOBALOBJECTS")
 do
+     echo -e "\n$PROJECT:"
      # counters
      OBJECTCOUNTPROJECT=0
      NEWOBJECTCOUNTPROJECT=0
@@ -301,6 +303,7 @@ do
      echo "Number of new objects in this namespace:      $NEWOBJECTCOUNTPROJECT"
      echo "Number of modified objects in this namespace: $MODIFIEDOBJECTCOUNTPROJECT"
 done
+echo -e "\nTotal:"
 echo "---------------------------------------------------"
 echo "Number of namespaces matched: $PROJECTCOUNT"
 echo "Number of objects matched:    $OBJECTCOUNT"
