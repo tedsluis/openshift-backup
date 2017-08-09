@@ -165,23 +165,31 @@ function COMMIT_CHANGES {
      OBJECTNAME=$3
      OBJECTCOUNT=$(($OBJECTCOUNT + 1))
      OBJECTCOUNTPROJECT=$(($OBJECTCOUNTPROJECT + 1))
-     git -C "$NAME_BACKUP_GIT_REPO" add "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" 1>/dev/null
-     STATUS=$(git -C "$NAME_BACKUP_GIT_REPO" status "$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME" | grep -P "(new\sfile:|modified:)" | grep "$OBJECTNAME" | sed 's/:.*$//' | sed 's/file//' | sed 's/ //g' )
+     OPTIONS="--git-dir=${NAME_BACKUP_GIT_REPO}/.git --work-tree=${NAME_BACKUP_GIT_REPO}"
+     OBJECT="$NAME_BACKUP_GIT_REPO/$PROJECT/$OBJECTTYPE/$OBJECTNAME"
+     # Add object file to repo and get status (new, modified, unchanged)
+     git ${OPTIONS} add ${OBJECT} 1>/dev/null
+     STATUS=$(git ${OPTIONS} status ${OBJECT} \
+                  | grep -P "(new\sfile:|modified:)" \
+                  | grep "$OBJECTNAME" \
+                  | sed 's/:.*$//' \
+                  | sed 's/file//' \
+                  | sed 's/ //g' )
      debug "2: PROJECT=$PROJECT, OBJECTTYPE=$OBJECTTYPE, OBJECTNAME=$OBJECTNAME, STATUS=$STATUS."
      if [[ $STATUS =~ new ]]; then
           NEWOBJECTCOUNT=$(($NEWOBJECTCOUNT + 1))
           NEWOBJECTCOUNTPROJECT=$(($NEWOBJECTCOUNTPROJECT + 1))
-          printf "      new objects: %-8s  %-30s  %-50s\n" "$NEWOBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
-          git -C "$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
+          printf "      new objects: %-8s  %-30s  %-50s\n" "$NEWOBJECTCOUNTPROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          git ${OPTIONS} commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, new object name $OBJECTNAME" 1>/dev/null
      elif [[ $STATUS =~ modified ]]; then
           MODIFIEDOBJECTCOUNT=$(($MODIFIEDOBJECTCOUNT + 1))
           MODIFIEDOBJECTCOUNTPROJECT=$(($MODIFIEDOBJECTCOUNTPROJECT + 1))
-          printf " modified objects: %-8s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
-          git -C "$NAME_BACKUP_GIT_REPO" commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>/dev/null
+          printf " modified objects: %-8s  %-30s  %-50s\n" "$MODIFIEDOBJECTCOUNTPROJECT" "$OBJECTTYPE" "$OBJECTNAME"
+          git ${OPTIONS} commit -m "$(date): project $PROJECT, object type $OBJECTTYPE, modified object name $OBJECTNAME" 1>/dev/null
      elif [[ $DEBUG_MODE == "true" ]]; then
-          printf "unchanged objects: %-8s  %-30s  %-50s \n" "$OBJECTCOUNT" "$OBJECTTYPE" "$OBJECTNAME"
+          printf "unchanged objects: %-8s  %-30s  %-50s \n" "$OBJECTCOUNTPROJECT" "$OBJECTTYPE" "$OBJECTNAME"
      else
-          echo -en "processing objects: $OBJECTCOUNT \r"
+          echo -en "processing objects: $OBJECTCOUNTPROJECT \r"
      fi
 }
 
