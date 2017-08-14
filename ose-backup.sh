@@ -244,7 +244,7 @@ do
                                                                                                      | grep -P "$OBJECTNAMEPART" \
                                                                                                      | sort` 
           do
-		  OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///" | sed "s/^.*\/(.*)$/\1/")
+		  OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///" | sed "s/^.*\/(.*)$/$1/")
               # Check if this object type is GLOBAL or belongs to a namespace
               CHECKNAMESPACE=""
               # Namespace or project:
