@@ -32,7 +32,7 @@ if [ ! -f "$OC_COMPLETION_FILE" ]; then
 fi
 
 # Get all your namespaces:
-NAMESPACES=$(echo $(oc get projects -o name | sed 's/^project\///' | \
+NAMESPACES=$(echo $(oc get projects -o name | sed 's/^projects\?\///' | \
                                               sort -u) | \
                                               sed 's/\s/,/g')
 # Get all object types:
@@ -99,7 +99,7 @@ for PARAMETER in "$@" ; do
      if [[ $PARAMETER == "--help" ]] || [[ $PARAMETER == "-help" ]] || [[ $PARAMETER == "-h" ]]; then
           help
      elif [[ $PARAMETER == "--version" ]] || [[ $PARAMETER == "-version" ]] || [[ $PARAMETER == "-v" ]]; then
-          version 
+          version
      elif [[ $PARAMETER == "--debug" ]] ; then
           debug "Debug mode is on!"
           DEBUG_MODE="true"
@@ -200,7 +200,7 @@ if [ ! -d "$NAME_BACKUP_GIT_REPO/.git" ]; then
      git init
 fi
 
-# House keeping 
+# House keeping
 GLOBALOBJECTSFILE="$NAME_BACKUP_GIT_REPO/globalobjects"
 NAMESPACEOBJECTSFILE="$NAME_BACKUP_GIT_REPO/namespaceobjects"
 rm "$GLOBALOBJECTSFILE" 2>/dev/null
@@ -242,9 +242,9 @@ do
      do
           for OBJECTTYPENAME in `oc get "$OBJECTTYPE" -n "$PROJECT"  -o name --no-headers 2>/dev/null| awk '{print $1}' \
                                                                                                      | grep -P "$OBJECTNAMEPART" \
-                                                                                                     | sort` 
+                                                                                                     | sort`
           do
-		  OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///" | sed 's/^.*\/\(.*\)$/\1/')
+                  OBJECTNAME=$(echo "$OBJECTTYPENAME" | sed "s/^$OBJECTTYPE\///" | sed 's/^.*\/\(.*\)$/\1/')
               # Check if this object type is GLOBAL or belongs to a namespace
               CHECKNAMESPACE=""
               # Namespace or project:
@@ -254,7 +254,7 @@ do
                    fi
                    CHECKNAMESPACE=$PROJECT
               # try to match object type with GLOBAL object type cache file
-              elif grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then 
+              elif grep  -q "^$OBJECTTYPE$" "$GLOBALOBJECTSFILE" ; then
                    CHECKNAMESPACE=""
               # try to match object type with NAMESPACE object type cache file
               elif grep -q "^$OBJECTTYPE$" "$NAMESPACEOBJECTSFILE" ; then
@@ -280,7 +280,7 @@ do
                         if [ "$PROJECT" == "GLOBAL" ] ; then
                              MAKE_DIRECTORY "$NAME_BACKUP_GIT_REPO/GLOBAL/$OBJECTTYPE"
                              oc export --raw $OBJECTTYPE $OBJECTNAME > "$NAME_BACKUP_GIT_REPO/GLOBAL/$OBJECTTYPE/$OBJECTNAME"
-                             COMMIT_CHANGES "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME" 
+                             COMMIT_CHANGES "$PROJECT" "$OBJECTTYPE" "$OBJECTNAME"
                         fi
                    fi
               else
@@ -317,3 +317,4 @@ echo "Number of namespaces matched: $PROJECTCOUNT"
 echo "Number of objects matched:    $OBJECTCOUNT"
 echo "Number of new objects:        $NEWOBJECTCOUNT"
 echo "Number of modified objects:   $MODIFIEDOBJECTCOUNT"
+
